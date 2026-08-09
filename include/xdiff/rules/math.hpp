@@ -1,20 +1,84 @@
-#ifndef XDIFF_MATH_DEFS_HPP
-#define XDIFF_MATH_DEFS_HPP
+#ifndef XDIFF_RULES_MATH_HPP
+#define XDIFF_RULES_MATH_HPP
+
+#include "core.hpp"
 
 
-#include "../rules.hpp"
+namespace xdiff::detail::rules{
 
 
-namespace xdiff{
+template<typename T>
+struct Pos : BaseOperand<T, Pos<T>>{
+
+    using Base = BaseOperand<T, Pos<T>>;
+
+    template<typename A>
+    XDIFF_INLINE_HOST_DEVICE
+    static auto operation(const A& arg){
+        return arg;
+    }
+
+    template<typename A, typename DA>
+    XDIFF_INLINE_HOST_DEVICE
+    static auto diff_rule(const DiffPair<A, DA>& a) {
+        if constexpr (DiffPair<A, DA>::isTrivial()) {
+            return 0;
+        } else {
+            return a.grad;
+        }
+    }
+};
 
 
-namespace detail::operations{
+template<typename T>
+struct Neg : BaseOperand<T, Neg<T>>{
+
+    using Base = BaseOperand<T, Neg<T>>;
+
+    template<typename A>
+    XDIFF_INLINE_HOST_DEVICE
+    static auto operation(const A& arg){
+        return -arg;
+    }
+
+    template<typename A, typename DA>
+    XDIFF_INLINE_HOST_DEVICE
+    static auto diff_rule(const DiffPair<A, DA>& a) {
+        if constexpr (DiffPair<A, DA>::isTrivial()) {
+            return 0;
+        } else {
+            return -a.grad;
+        }
+    }
+};
+
+template<typename T>
+struct Log : MathFunc<Log<T>, T>{
+
+    using Base = MathFunc<Log<T>, T>;
+
+    template<typename A>
+    XDIFF_INLINE_HOST_DEVICE
+    static auto operation(const A& arg){
+        return log(arg);
+    }
+
+    /// @brief d(log(f)) = df / f
+    template<typename F, typename DF>
+    XDIFF_INLINE_HOST_DEVICE
+    static auto special_diff(const F& f, const DF& df) {
+        return df / f;
+    }
+
+};
+
+
 
 template<typename T>
 struct Log10 : MathFunc<Log10<T>, T>{
 
     using Base = MathFunc<Log10<T>, T>;
-    using Base::optimized_eval;
+
     
     template<typename A>
     XDIFF_INLINE_HOST_DEVICE
@@ -34,7 +98,7 @@ template<typename T>
 struct Sqrt : MathFunc<Sqrt<T>, T>{
 
     using Base = MathFunc<Sqrt<T>, T>;
-    using Base::optimized_eval;
+
     
     template<typename A>
     XDIFF_INLINE_HOST_DEVICE
@@ -54,7 +118,7 @@ template<typename T>
 struct Abs : MathFunc<Abs<T>, T>{
 
     using Base = MathFunc<Abs<T>, T>;
-    using Base::optimized_eval;
+
     
     template<typename A>
     XDIFF_INLINE_HOST_DEVICE
@@ -75,7 +139,7 @@ template<typename T>
 struct Exp : MathFunc<Exp<T>, T>{
 
     using Base = MathFunc<Exp<T>, T>;
-    using Base::optimized_eval;
+
     
     template<typename A>
     XDIFF_INLINE_HOST_DEVICE
@@ -96,7 +160,7 @@ template<typename T>
 struct Sin : MathFunc<Sin<T>, T>{
 
     using Base = MathFunc<Sin<T>, T>;
-    using Base::optimized_eval;
+
     
     template<typename A>
     XDIFF_INLINE_HOST_DEVICE
@@ -117,7 +181,7 @@ template<typename T>
 struct Cos : MathFunc<Cos<T>, T>{
 
     using Base = MathFunc<Cos<T>, T>;
-    using Base::optimized_eval;
+
     
     template<typename A>
     XDIFF_INLINE_HOST_DEVICE
@@ -137,7 +201,7 @@ template<typename T>
 struct Tan : MathFunc<Tan<T>, T>{
     
     using Base = MathFunc<Tan<T>, T>;
-    using Base::optimized_eval;
+
     
     template<typename A>
     XDIFF_INLINE_HOST_DEVICE
@@ -148,7 +212,8 @@ struct Tan : MathFunc<Tan<T>, T>{
     template<typename F, typename DF>
     XDIFF_INLINE_HOST_DEVICE
     static auto special_diff(const F& f, const DF& df) {
-        return df * (1 + tan(f)*tan(f));
+        auto tan_f = tan(f);
+        return df * (1 + tan_f * tan_f);
     }
 };
 
@@ -157,7 +222,7 @@ template<typename T>
 struct Cot : MathFunc<Cot<T>, T>{
 
     using Base = MathFunc<Cot<T>, T>;
-    using Base::optimized_eval;
+
     
     template<typename A>
     XDIFF_INLINE_HOST_DEVICE
@@ -168,7 +233,8 @@ struct Cot : MathFunc<Cot<T>, T>{
     template<typename F, typename DF>
     XDIFF_INLINE_HOST_DEVICE
     static auto special_diff(const F& f, const DF& df) {
-        return -df / (sin(f) * sin(f));
+        auto sin_f = sin(f);
+        return -df / (sin_f * sin_f);
     }
 };
 
@@ -177,7 +243,7 @@ template<typename T>
 struct Sec : MathFunc<Sec<T>, T>{
     
     using Base = MathFunc<Sec<T>, T>;
-    using Base::optimized_eval;
+
     
     template<typename A>
     XDIFF_INLINE_HOST_DEVICE
@@ -197,7 +263,7 @@ template<typename T>
 struct Csc : MathFunc<Csc<T>, T>{
 
     using Base = MathFunc<Csc<T>, T>;
-    using Base::optimized_eval;
+
     
     template<typename A>
     XDIFF_INLINE_HOST_DEVICE
@@ -208,7 +274,8 @@ struct Csc : MathFunc<Csc<T>, T>{
     template<typename F, typename DF>
     XDIFF_INLINE_HOST_DEVICE
     static auto special_diff(const F& f, const DF& df) {
-        return -df * cos(f) / (sin(f) * sin(f));
+        auto sin_f = sin(f);
+        return -df / (sin_f * sin_f);
     }
 };
 
@@ -217,7 +284,7 @@ template<typename T>
 struct ArcSin : MathFunc<ArcSin<T>, T>{
 
     using Base = MathFunc<ArcSin<T>, T>;
-    using Base::optimized_eval;
+
     
     template<typename A>
     XDIFF_INLINE_HOST_DEVICE
@@ -237,7 +304,7 @@ template<typename T>
 struct ArcCos : MathFunc<ArcCos<T>, T>{
     
     using Base = MathFunc<ArcCos<T>, T>;
-    using Base::optimized_eval;
+
     
     template<typename A>
     XDIFF_INLINE_HOST_DEVICE
@@ -257,7 +324,7 @@ template<typename T>
 struct ArcTan : MathFunc<ArcTan<T>, T>{
 
     using Base = MathFunc<ArcTan<T>, T>;
-    using Base::optimized_eval;
+
     
     template<typename A>
     XDIFF_INLINE_HOST_DEVICE
@@ -277,7 +344,7 @@ template<typename T>
 struct ArcCot : MathFunc<ArcCot<T>, T>{
 
     using Base = MathFunc<ArcCot<T>, T>;
-    using Base::optimized_eval;
+
     
     template<typename A>
     XDIFF_INLINE_HOST_DEVICE
@@ -297,7 +364,7 @@ template<typename T>
 struct ArcSec : MathFunc<ArcSec<T>, T>{
 
     using Base = MathFunc<ArcSec<T>, T>;
-    using Base::optimized_eval;
+
     
     template<typename A>
     XDIFF_INLINE_HOST_DEVICE
@@ -317,7 +384,7 @@ template<typename T>
 struct ArcCsc : MathFunc<ArcCsc<T>, T>{
 
     using Base = MathFunc<ArcCsc<T>, T>;
-    using Base::optimized_eval;
+
     
     template<typename A>
     XDIFF_INLINE_HOST_DEVICE
@@ -337,7 +404,7 @@ template<typename T>
 struct Sinh : MathFunc<Sinh<T>, T>{
 
     using Base = MathFunc<Sinh<T>, T>;
-    using Base::optimized_eval;
+
     
     template<typename A>
     XDIFF_INLINE_HOST_DEVICE
@@ -357,7 +424,7 @@ template<typename T>
 struct Cosh : MathFunc<Cosh<T>, T>{
     
     using Base = MathFunc<Cosh<T>, T>;
-    using Base::optimized_eval;
+
     
     template<typename A>
     XDIFF_INLINE_HOST_DEVICE
@@ -377,7 +444,7 @@ template<typename T>
 struct Tanh : MathFunc<Tanh<T>, T>{
     
     using Base = MathFunc<Tanh<T>, T>;
-    using Base::optimized_eval;
+
     
     template<typename A>
     XDIFF_INLINE_HOST_DEVICE
@@ -398,7 +465,7 @@ template<typename T>
 struct Erf : MathFunc<Erf<T>, T>{
     
     using Base = MathFunc<Erf<T>, T>;
-    using Base::optimized_eval;
+
     
     template<typename A>
     XDIFF_INLINE_HOST_DEVICE
@@ -413,36 +480,13 @@ struct Erf : MathFunc<Erf<T>, T>{
     }
 };
 
-} // namespace detail::operations
 
 
 
-// ============= Apply the definitions to the public API for the Dual class =================
-
-XDIFF_MATHFUNC_DUAL(abs, Abs)
-XDIFF_MATHFUNC_DUAL(log10, Log10)
-XDIFF_MATHFUNC_DUAL(sqrt, Sqrt)
-XDIFF_MATHFUNC_DUAL(exp, Exp)
-XDIFF_MATHFUNC_DUAL(sin, Sin)
-XDIFF_MATHFUNC_DUAL(cos, Cos)
-XDIFF_MATHFUNC_DUAL(tan, Tan)
-XDIFF_MATHFUNC_DUAL(cot, Cot)
-XDIFF_MATHFUNC_DUAL(sec, Sec)
-XDIFF_MATHFUNC_DUAL(csc, Csc)
-XDIFF_MATHFUNC_DUAL(asin, ArcSin)
-XDIFF_MATHFUNC_DUAL(acos, ArcCos)
-XDIFF_MATHFUNC_DUAL(atan, ArcTan)
-XDIFF_MATHFUNC_DUAL(acot, ArcCot)
-XDIFF_MATHFUNC_DUAL(asec, ArcSec)
-XDIFF_MATHFUNC_DUAL(acsc, ArcCsc)
-XDIFF_MATHFUNC_DUAL(sinh, Sinh)
-XDIFF_MATHFUNC_DUAL(cosh, Cosh)
-XDIFF_MATHFUNC_DUAL(tanh, Tanh)
-XDIFF_MATHFUNC_DUAL(erf, Erf)
-
-
-} // namespace xdiff
 
 
 
-#endif // XDIFF_MATH_DEFS_HPP
+
+} // namespace xdiff::detail::rules
+
+#endif // XDIFF_RULES_MATH_HPP

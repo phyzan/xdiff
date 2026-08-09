@@ -1,6 +1,6 @@
-# XDiff
-
 <div align="center">
+
+# XDiff
 
 ![C++20](https://img.shields.io/badge/C%2B%2B-20-blue.svg?style=flat&logo=c%2B%2B)
 ![Header Only](https://img.shields.io/badge/Header-Only-green.svg?style=flat)
@@ -14,294 +14,202 @@
 
 ---
 
+## Overview
+
+Numerical differentiation is fundamental in scientific computing, optimization, and machine learning. Finding an appropriate step size for finite differences is tricky, and even with a perfect step size, the result is still an approximation.
+
+**Automatic differentiation** solves this by computing *exact* derivatives through operator overloading, without:
+- Explicitly defining derivative functions (tedious for higher-order multivariate cases)
+- Using runtime symbolic differentiation
+
+### How It Works
+
+A simple dual number struct:
+```cpp
+struct Dual {
+    double value;      // current scalar value
+    double derivative; // current derivative value
+};
+```
+
+With overloaded operators:
+```cpp
+Dual operator+(const Dual& a, const Dual& b) {
+    return {a.value + b.value, a.derivative + b.derivative};
+}
+
+Dual operator*(const Dual& a, const Dual& b) {
+    // product rule: d(f*g) = f*dg + df*g
+    return {a.value * b.value, a.value * b.derivative + a.derivative * b.value};
+}
+```
+
+Now `f(x) = x²` differentiates automatically:
+```cpp
+Dual x{3.0, 1.0}; // x = 3, dx/dx = 1
+Dual f = x * x;   // f = x^2
+std::cout << "f(3) = " << f.value << "\n";      // 9
+std::cout << "df/dx = " << f.derivative << "\n"; // 6
+```
+
+XDiff extends this to arbitrary-order derivatives, multivariate functions, and abstract numeric types using template metaprogramming to keep the interface simple while maximizing compiler optimizations.
+
+The key principle: all differentiation information comes from the function itself, as long as it's templated:
+```cpp
+template<typename T>
+T f(const T& x, const T& y) {
+    return sin(x - 5/(pow(x, y) - x)) * y - 4*cos(y - x);
+}
+```
+
+---
+
 ## Features
 
-- **Arbitrary-Order Derivatives** — Compute derivatives up to any order with compile-time configuration
-- **Multivariate Support** — Handle functions of any number of independent variables
-- **Dual Evaluation Paths** — Direct evaluation with `Dual` or lazy evaluation with expression templates
-- **Expression Simplification** — Compile-time algebraic optimizations (constant folding, identity elimination)
-- **GPU Support** — Native support for CUDA, HIP, and SYCL backends
-- **Modular Architecture** — Clean separation of concerns across well-documented headers
-- **Zero Runtime Overhead** — Template metaprogramming ensures computations are optimized at compile time
-- **Header-Only** — Just include and use, no linking required
-- **Exact Derivatives** — Computes analytical derivatives, not numerical approximations
+- **Arbitrary-Order Derivatives** — Compute derivatives up to any order
+- **Multivariate Support** — Compile-time or runtime number of variables
+- **Expression Simplification** — Constant folding, identity elimination
+- **GPU Support** — CUDA, HIP, and SYCL backends
+- **Modular Architecture** — Clean separation across headers
+- **Zero Runtime Overhead** — Optimizations happen at compile time
+- **Header-Only** — Just include and use
+- **Exact Derivatives** — Analytical, not numerical approximations
+
+---
+
+## Installation
+
+Clone and initialize submodules:
+```bash
+git submodule update --init --recursive
+```
+
+The `lazy` submodule maximizes performance for runtime-sized derivatives (avoiding heap allocation bottlenecks).
+
+Then include:
+```cpp
+#include <xdiff/xdiff.hpp>
+```
 
 ---
 
 ## Quick Start
 
-All types are in the `xdiff` namespace.
+The main type:
+```cpp
+template<typename T, size_t Nvars, size_t Norder, Layout LY>
+class Dual;
+```
+
+**Template parameters:**
+| Parameter | Description |
+|-----------|-------------|
+| `T` | Underlying numeric type (`double`, `float`, etc.) |
+| `Nvars` | Number of independent variables (0 = runtime) |
+| `Norder` | Maximum differentiation order |
+| `LY` | Layout (see below) |
+
+**Layout:**
+
+| Type | Description |
+|------|-------------|
+| `Layout::Nested` | Straightforward recursive implementation. Longer compile times, more memory. Supports runtime `Nvars` (set `Nvars = 0`). |
+| `Layout::Flat` | Compact layout. Near-optimal performance for small `Nvars`/`Norder`. Compile-time only. |
+
+---
 
 ### Basic Example
 
-```cpp
-#include <xdiff/xdiff.hpp>
-#include <iostream>
-
-using namespace xdiff;
-
-int main() {
-    // Define compile-time variable symbols
-    Symbol<0> x;
-    Symbol<1> y;
-
-    // Create Dual numbers: <Type, NumVariables, MaxOrder>
-    // Order 2 = compute up to second derivatives
-    // 2 variables = x and y
-    Dual<double, 2, 2> a(x, 3.0);  // a = 3.0, da/dx = 1, da/dy = 0
-    Dual<double, 2, 2> b(y, 2.0);  // b = 2.0, db/dx = 0, db/dy = 1
-
-    // Compute f = a * b
-    auto f = a * b;
-
-    // Access results
-    std::cout << "f(3,2) = " << f.value() << "\n";           // 6
-    std::cout << "df/dx  = " << f.get_diff_wrt(x) << "\n";   // 2
-    std::cout << "df/dy  = " << f.get_diff_wrt(y) << "\n";   // 3
-    std::cout << "d²f/dxdy = " << f.get_diff_wrt(x, y) << "\n"; // 1
-
-    return 0;
-}
+Compile with:
+```bash
+g++ -std=c++20 -Iinclude -Iexternal/lazy/include test.cpp -o test
 ```
 
-### Higher-Order Derivatives
-
 ```cpp
 #include <xdiff/xdiff.hpp>
 
 using namespace xdiff;
 
-// Function: f(x,y,z) = x³y²z + xy³
 template<typename T>
-T compute(const T& x, const T& y, const T& z) {
-    return x*x*x * y*y * z + x * y*y*y;
+T f(const T& x, const T& y, const T& z) {
+    return x*(1 - y) + sin(y/(x+z));
 }
 
 int main() {
-    Symbol<0> X;
-    Symbol<1> Y;
-    Symbol<2> Z;
+    using D = Dual<double, 3, 2, Layout::Nested>;
 
-    // Track up to 3rd order derivatives for 3 variables
-    using F = Dual<double, 3, 3>;
+    D x(1.0, {.axis = 0}); // gradient: {1, 0, 0}
+    D y(2.0, {.axis = 1}); // gradient: {0, 1, 0}
+    D z(3.0, {.axis = 2}); // gradient: {0, 0, 1}
 
-    F x(X, 2.0);
-    F y(Y, 3.0);
-    F z(Z, 1.0);
+    // Constants (no derivatives):
+    // D c(5.0);  or  D c(5.0, {.axis = -1});
 
-    auto f = compute(x, y, z);
+    D res = f(x, y, z);
 
     // First derivatives
-    f.get_diff_wrt(X);        // df/dx
-    f.get_diff_wrt(Y);        // df/dy
-    f.get_diff_wrt(Z);        // df/dz
+    std::cout << "df/dx = " << res.get_diff_wrt(0) << "\n";
+    std::cout << "df/dy = " << res.get_diff_wrt(1) << "\n";
+    std::cout << "df/dz = " << res.get_diff_wrt(2) << "\n";
 
     // Second derivatives
-    f.get_diff_wrt(X, X);     // d²f/dx²
-    f.get_diff_wrt(X, Y);     // d²f/dxdy
-
-    // Third derivatives
-    f.get_diff_wrt(X, Y, Z);  // d³f/dxdydz
-    f.get_diff_wrt(X, X, Y);  // d³f/dx²dy
+    std::cout << "d²f/dx² = " << res.get_diff_wrt(0, 0) << "\n";
+    std::cout << "d²f/dxdy = " << res.get_diff_wrt(0, 1) << "\n";
+    // ... etc
 
     return 0;
 }
 ```
 
-### Using Expression Templates
-
-XDiff supports lazy evaluation via expression templates for potential optimization:
-
-```cpp
-#include <xdiff/xdiff.hpp>
-
-using namespace xdiff;
-
-int main() {
-    // Compile-time variable with known axis
-    Variable<double, 0> x(3.0);
-    Variable<double, 1> y(2.0);
-
-    // Build expression lazily (not yet evaluated)
-    auto expr = x * y + log(x);
-
-    // Evaluate to a Dual when needed
-    Dual<double, 2, 2> result = expr;
-
-    return 0;
-}
-```
+Results match analytical expressions to machine precision. Requesting derivatives beyond `Norder` triggers a compile-time error.
 
 ---
 
-## API Reference
+## Runtime Number of Variables
 
-### Core Types
-
-#### `xdiff::Symbol<N>`
-
-Compile-time symbol for differentiation axes.
+When `Nvars` isn't known at compile time, use `Nvars = 0` with `Layout::Nested` layout:
 
 ```cpp
-Symbol<0> x;  // First variable
-Symbol<1> y;  // Second variable
-Symbol<2> z;  // Third variable
+Dual<double, 0, 2, Layout::Nested> x(1.0, {.axis = 0, .nvars = 3}); // stores {value=1.0, gradient={1,0,0}, and hessian={{0,0,0},{0,0,0},{0,0,0}}}
 ```
 
-#### `xdiff::Dual<T, Nvars, Norder>`
+**Notes:**
+- Uses heap allocation (`std::vector`) (avoid in performance-critical code)
+- Not compatible with GPU backends
+- If `.nvars` omitted, uses the static default (settable via `Dual::set_default_nvars()`)
 
-Main class representing a value with all its partial derivatives.
+> **Warning:** Interacting `Dual` objects must have matching `Nvars`, `Norder`, and `Layout`. Compile-time mismatches cause errors; runtime mismatches trigger assertions.
 
-| Template Parameter | Description |
-|--------------------|-------------|
-| `T` | Numeric type (`double`, `float`, etc.) |
-| `Nvars` | Number of independent variables |
-| `Norder` | Maximum derivative order to compute |
+### Optimizing Runtime Performance
 
-### Constructors
+Large expressions with runtime `Nvars` are expensive due to heap allocations. Enable lazy evaluation:
 
+```bash
+g++ -DXDIFF_LAZY_NESTED_DUAL ...
+```
+
+For maximum performance, also use `lazy::LazyType` instead of `Dual`:
 ```cpp
-// Default: value = 0, all derivatives = 0
-Dual<double, 2, 2> f;
-
-// Constant: value = v, all derivatives = 0
-Dual<double, 2, 2> f(5.0);
-
-// Variable (compile-time axis): value = v, d/dx_I = 1, others = 0
-Symbol<0> x;
-Dual<double, 2, 2> f(x, 3.0);
-
-// Variable (runtime axis): value = v, d/dx_axis = 1
-Dual<double, 2, 2> f(3.0, 0);  // axis = 0
+lazy::LazyType<Dual<double, 0, 2, Layout::Nested>>
 ```
 
-### Member Functions
-
-| Method | Description |
-|--------|-------------|
-| `value()` | Returns the function value (zeroth derivative) |
-| `get_diff_wrt(vars...)` | Returns the scalar value of a specific derivative |
-| `diff_wrt(vars...)` | Returns a Dual representing the derivative |
-| `reduced_diff_wrt(vars...)` | Returns a reduced-order Dual of the derivative |
-| `data()` | Returns reference to internal storage array |
-
-### Supported Operators
-
-| Operator | Description |
-|----------|-------------|
-| `+`, `-`, `*`, `/` | Binary arithmetic |
-| `+=`, `-=`, `*=`, `/=` | Compound assignment |
-| `+`, `-` (unary) | Unary plus/minus |
-| `pow(f, g)` | Exponentiation |
-| `log(f)` | Natural logarithm |
-| `==`, `!=`, `<`, `<=`, `>`, `>=` | Comparison (by value only) |
-
-### Key Design Concepts
-
-#### Two Evaluation Paths
-
-1. **Direct Path (Dual)**: Immediate evaluation with derivative propagation
-   ```cpp
-   Dual<double, 2, 2> a(x, 3.0);
-   Dual<double, 2, 2> b(y, 2.0);
-   auto f = a * b;  // Evaluated immediately
-   ```
-
-2. **Lazy Path (Expression Templates)**: Build expression tree, optimize, then evaluate
-   ```cpp
-   Variable<double, 0> x(3.0);
-   auto expr = x * x + 2 * x;  // Expression tree (not evaluated)
-   Dual<double, 1, 2> result = expr;  // Evaluated here
-   ```
-
-#### Expression Simplification
-
-XDiff performs compile-time algebraic simplifications:
-
-```cpp
-// These optimizations happen at compile time:
-0 + a  →  a           // Identity elimination
-1 * a  →  a
-a - 0  →  a
-0 * a  →  0           // Zero propagation
--(-x)  →  x           // Double negation
-(a/b)/c → a/(b*c)     // Algebraic simplification
-const + const → const // Constant folding
-```
+See the `lazy` submodule for details.
 
 ---
 
-## Performance
+## Macros
 
-### Storage Complexity
+| Macro | Effect |
+|-------|--------|
+| `XDIFF_LAZY_NESTED_DUAL` | Lazy evaluation for `Nested` with `Nvars = 0`. Avoids intermediate heap allocations. |
+| `XDIFF_FAST` | Aggressive inlining for `Flat` layout. Recommended for `Norder ≤ 3`. |
+| `XDIFF_LEIBNIZ_OPT` | Iterative Leibniz-rule formula for `Flat` higher-order derivatives. |
+| `XDIFF_SCALAR_OPTIMIZATIONS` | Optimized `Dual`-scalar operations for `Flat` layout. |
 
-The number of stored derivatives grows combinatorially:
-
-```
-Storage Size = C(Nvars + Norder, Norder)
-```
-
-| Variables | Order 1 | Order 2 | Order 3 | Order 4 |
-|-----------|---------|---------|---------|---------|
-| 1 | 2 | 3 | 4 | 5 |
-| 2 | 3 | 6 | 10 | 15 |
-| 3 | 4 | 10 | 20 | 35 |
-| 4 | 5 | 15 | 35 | 70 |
-| 5 | 6 | 21 | 56 | 126 |
-
-### Storage Layout
-
-Derivatives are stored in graded colexicographic order:
-
-```
-For 3 variables (x, y, z) and order 2:
-[f, fx, fy, fz, fxx, fxy, fxz, fyy, fyz, fzz]
- ↑   └──────┘   └─────────────────────────┘
- │   1st order        2nd order
- value
-```
-
-### GPU Optimization
-
-XDiff automatically detects GPU backends and uses:
-- Thread-local scratch space on CPU for expression evaluation
-- Direct evaluation on GPU to avoid shared state issues
-- Aggressive inlining via `__forceinline__` on CUDA/HIP
-
----
-
-## Advanced Usage
-
-### Extracting Derivative Objects
-
-```cpp
-Symbol<0> x;
-Symbol<1> y;
-
-Dual<double, 2, 3> f(x, 2.0);
-auto g = f * f * f;  // g = x³
-
-// Get dg/dx as a new Dual (with its own derivatives)
-auto dg_dx = g.reduced_diff_wrt(x);  // Dual<double, 2, 2>
-
-// dg_dx.value() = d(x³)/dx = 3x² = 12
-// dg_dx.get_diff_wrt(x) = d²(x³)/dx² = 6x = 12
-```
-
-### Runtime Variable Indices
-
-```cpp
-// When axis isn't known at compile time
-Dual<double, 3, 2> f(2.0, axis);  // axis is a runtime size_t
-
-// Or use runtime Variable
-Variable<double, -1> x(3.0, 0);  // Axis specified at runtime
-```
+All improve performance at the cost of compile time. For higher-order derivatives, prefer using the `clang++` compiler when compiling with `-O3` and `-DXDIFF_FAST`, as it inlines more aggressively and faster than `g++` does, when testing the `Layout::Flat` template parameter.
 
 ---
 
 ## License
 
-This project is licensed under the MIT License.
-
----
+MIT License
