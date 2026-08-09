@@ -1,4 +1,4 @@
-# AutoDiff
+# XDiff
 
 <div align="center">
 
@@ -6,55 +6,59 @@
 ![Header Only](https://img.shields.io/badge/Header-Only-green.svg?style=flat)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat)
 ![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg?style=flat)
+![GPU](https://img.shields.io/badge/GPU-CUDA%20%7C%20HIP%20%7C%20SYCL-orange.svg?style=flat)
 
-**A high-performance, header-only C++20 library for arbitrary-order automatic differentiation**
+**A modular C++20 library for arbitrary-order automatic differentiation**
 
 </div>
 
 ---
 
-## ✨ Features
+## Features
 
-- **🎯 Arbitrary-Order Derivatives** — Compute derivatives up to any order with compile-time configuration
-- **📐 Multivariate Support** — Handle functions of any number of independent variables
-- **⚡ Zero Runtime Overhead** — Template metaprogramming ensures computations are optimized at compile time
-- **🔧 Header-Only** — Just include and use, no linking required
-- **🧮 Exact Derivatives** — Computes analytical derivatives, not numerical approximations
-- **🔄 Operator Overloading** — Natural mathematical syntax with automatic derivative propagation
+- **Arbitrary-Order Derivatives** — Compute derivatives up to any order with compile-time configuration
+- **Multivariate Support** — Handle functions of any number of independent variables
+- **Dual Evaluation Paths** — Direct evaluation with `Dual` or lazy evaluation with expression templates
+- **Expression Simplification** — Compile-time algebraic optimizations (constant folding, identity elimination)
+- **GPU Support** — Native support for CUDA, HIP, and SYCL backends
+- **Modular Architecture** — Clean separation of concerns across well-documented headers
+- **Zero Runtime Overhead** — Template metaprogramming ensures computations are optimized at compile time
+- **Header-Only** — Just include and use, no linking required
+- **Exact Derivatives** — Computes analytical derivatives, not numerical approximations
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
-All types are in the `autodiff` namespace. You can either use the namespace prefix or `using namespace autodiff;`.
+All types are in the `xdiff` namespace.
 
 ### Basic Example
 
 ```cpp
-#include <autodiff/autodiff.hpp>
+#include <xdiff/xdiff.hpp>
 #include <iostream>
 
-using namespace autodiff;
+using namespace xdiff;
 
 int main() {
-    // Define variables (compile-time indices)
-    Variable<0> x;
-    Variable<1> y;
+    // Define compile-time variable symbols
+    Symbol<0> x;
+    Symbol<1> y;
 
-    // Create AutoDiff objects: <Type, MaxOrder, NumVariables>
+    // Create Dual numbers: <Type, NumVariables, MaxOrder>
     // Order 2 = compute up to second derivatives
     // 2 variables = x and y
-    AutoDiff<double, 2, 2> a(3.0, x);  // a = 3, da/dx = 1, da/dy = 0
-    AutoDiff<double, 2, 2> b(2.0, y);  // b = 2, db/dx = 0, db/dy = 1
+    Dual<double, 2, 2> a(x, 3.0);  // a = 3.0, da/dx = 1, da/dy = 0
+    Dual<double, 2, 2> b(y, 2.0);  // b = 2.0, db/dx = 0, db/dy = 1
 
     // Compute f = a * b
     auto f = a * b;
 
     // Access results
     std::cout << "f(3,2) = " << f.value() << "\n";           // 6
-    std::cout << "df/dx  = " << f.diff_value(x) << "\n";     // 2
-    std::cout << "df/dy  = " << f.diff_value(y) << "\n";     // 3
-    std::cout << "d²f/dxdy = " << f.diff_value(x, y) << "\n"; // 1
+    std::cout << "df/dx  = " << f.get_diff_wrt(x) << "\n";   // 2
+    std::cout << "df/dy  = " << f.get_diff_wrt(y) << "\n";   // 3
+    std::cout << "d²f/dxdy = " << f.get_diff_wrt(x, y) << "\n"; // 1
 
     return 0;
 }
@@ -63,9 +67,9 @@ int main() {
 ### Higher-Order Derivatives
 
 ```cpp
-#include <autodiff/autodiff.hpp>
+#include <xdiff/xdiff.hpp>
 
-using namespace autodiff;
+using namespace xdiff;
 
 // Function: f(x,y,z) = x³y²z + xy³
 template<typename T>
@@ -74,57 +78,55 @@ T compute(const T& x, const T& y, const T& z) {
 }
 
 int main() {
-    Variable<0> X;
-    Variable<1> Y;
-    Variable<2> Z;
+    Symbol<0> X;
+    Symbol<1> Y;
+    Symbol<2> Z;
 
     // Track up to 3rd order derivatives for 3 variables
-    using F = AutoDiff<double, 3, 3>;
+    using F = Dual<double, 3, 3>;
 
-    F x(2.0, X);
-    F y(3.0, Y);
-    F z(1.0, Z);
+    F x(X, 2.0);
+    F y(Y, 3.0);
+    F z(Z, 1.0);
 
     auto f = compute(x, y, z);
 
     // First derivatives
-    f.diff_value(X);        // df/dx
-    f.diff_value(Y);        // df/dy
-    f.diff_value(Z);        // df/dz
+    f.get_diff_wrt(X);        // df/dx
+    f.get_diff_wrt(Y);        // df/dy
+    f.get_diff_wrt(Z);        // df/dz
 
     // Second derivatives
-    f.diff_value(X, X);     // d²f/dx²
-    f.diff_value(X, Y);     // d²f/dxdy
+    f.get_diff_wrt(X, X);     // d²f/dx²
+    f.get_diff_wrt(X, Y);     // d²f/dxdy
 
     // Third derivatives
-    f.diff_value(X, Y, Z);  // d³f/dxdydz
-    f.diff_value(X, X, Y);  // d³f/dx²dy
+    f.get_diff_wrt(X, Y, Z);  // d³f/dxdydz
+    f.get_diff_wrt(X, X, Y);  // d³f/dx²dy
 
     return 0;
 }
 ```
 
-### Using Mathematical Functions
+### Using Expression Templates
+
+XDiff supports lazy evaluation via expression templates for potential optimization:
 
 ```cpp
-#include <autodiff/autodiff.hpp>
+#include <xdiff/xdiff.hpp>
 
-using namespace autodiff;
+using namespace xdiff;
 
 int main() {
-    Variable<0> x;
+    // Compile-time variable with known axis
+    Variable<double, 0> x(3.0);
+    Variable<double, 1> y(2.0);
 
-    AutoDiff<double, 2, 1> a(1.5, x);
+    // Build expression lazily (not yet evaluated)
+    auto expr = x * y + log(x);
 
-    // Supported functions
-    auto f1 = exp(a);       // Exponential
-    auto f2 = log(a);       // Natural logarithm
-    auto f3 = pow(a, 2.0);  // Power (variable base)
-    auto f4 = pow(2.0, a);  // Power (variable exponent)
-    auto f5 = pow(a, a);    // Power (both variable)
-
-    // Compound expressions
-    auto g = exp(a * a) / (1.0 + a);
+    // Evaluate to a Dual when needed
+    Dual<double, 2, 2> result = expr;
 
     return 0;
 }
@@ -132,52 +134,45 @@ int main() {
 
 ---
 
-## 📖 API Reference
-
-All types are in the `autodiff` namespace.
+## API Reference
 
 ### Core Types
 
-#### `autodiff::Variable<N>`
+#### `xdiff::Symbol<N>`
 
-Compile-time variable identifier used to specify which derivatives to track.
+Compile-time symbol for differentiation axes.
 
 ```cpp
-using namespace autodiff;
-
-Variable<0> x;  // First variable
-Variable<1> y;  // Second variable
-Variable<2> z;  // Third variable
+Symbol<0> x;  // First variable
+Symbol<1> y;  // Second variable
+Symbol<2> z;  // Third variable
 ```
 
-#### `autodiff::AutoDiff<T, Norder, Nvars>`
+#### `xdiff::Dual<T, Nvars, Norder>`
 
-Main class representing a value with its derivatives.
+Main class representing a value with all its partial derivatives.
 
 | Template Parameter | Description |
 |--------------------|-------------|
 | `T` | Numeric type (`double`, `float`, etc.) |
-| `Norder` | Maximum derivative order to compute |
 | `Nvars` | Number of independent variables |
+| `Norder` | Maximum derivative order to compute |
 
 ### Constructors
 
 ```cpp
-using namespace autodiff;
-
 // Default: value = 0, all derivatives = 0
-AutoDiff<double, 2, 2> f;
+Dual<double, 2, 2> f;
 
 // Constant: value = v, all derivatives = 0
-AutoDiff<double, 2, 2> f(5.0);
+Dual<double, 2, 2> f(5.0);
 
-// Variable: value = v, d/dx_I = 1, others = 0
-Variable<0> x;
-AutoDiff<double, 2, 2> f(3.0, x);
+// Variable (compile-time axis): value = v, d/dx_I = 1, others = 0
+Symbol<0> x;
+Dual<double, 2, 2> f(x, 3.0);
 
-// From raw data array
-std::array<double, 6> data = {1, 2, 3, 4, 5, 6};
-AutoDiff<double, 2, 2> f(data);
+// Variable (runtime axis): value = v, d/dx_axis = 1
+Dual<double, 2, 2> f(3.0, 0);  // axis = 0
 ```
 
 ### Member Functions
@@ -185,10 +180,10 @@ AutoDiff<double, 2, 2> f(data);
 | Method | Description |
 |--------|-------------|
 | `value()` | Returns the function value (zeroth derivative) |
-| `diff_value(vars...)` | Returns the scalar value of a specific derivative |
-| `diff(vars...)` | Returns an AutoDiff representing the derivative |
-| `reduced_diff(vars...)` | Returns a reduced-order AutoDiff of the derivative |
-| `data()` | Returns pointer to internal storage |
+| `get_diff_wrt(vars...)` | Returns the scalar value of a specific derivative |
+| `diff_wrt(vars...)` | Returns a Dual representing the derivative |
+| `reduced_diff_wrt(vars...)` | Returns a reduced-order Dual of the derivative |
+| `data()` | Returns reference to internal storage array |
 
 ### Supported Operators
 
@@ -198,84 +193,45 @@ AutoDiff<double, 2, 2> f(data);
 | `+=`, `-=`, `*=`, `/=` | Compound assignment |
 | `+`, `-` (unary) | Unary plus/minus |
 | `pow(f, g)` | Exponentiation |
-| `exp(f)` | Exponential |
 | `log(f)` | Natural logarithm |
+| `==`, `!=`, `<`, `<=`, `>`, `>=` | Comparison (by value only) |
+
+### Key Design Concepts
+
+#### Two Evaluation Paths
+
+1. **Direct Path (Dual)**: Immediate evaluation with derivative propagation
+   ```cpp
+   Dual<double, 2, 2> a(x, 3.0);
+   Dual<double, 2, 2> b(y, 2.0);
+   auto f = a * b;  // Evaluated immediately
+   ```
+
+2. **Lazy Path (Expression Templates)**: Build expression tree, optimize, then evaluate
+   ```cpp
+   Variable<double, 0> x(3.0);
+   auto expr = x * x + 2 * x;  // Expression tree (not evaluated)
+   Dual<double, 1, 2> result = expr;  // Evaluated here
+   ```
+
+#### Expression Simplification
+
+XDiff performs compile-time algebraic simplifications:
+
+```cpp
+// These optimizations happen at compile time:
+0 + a  →  a           // Identity elimination
+1 * a  →  a
+a - 0  →  a
+0 * a  →  0           // Zero propagation
+-(-x)  →  x           // Double negation
+(a/b)/c → a/(b*c)     // Algebraic simplification
+const + const → const // Constant folding
+```
 
 ---
 
-## ⚙️ Compilation Options
-
-AutoDiff provides several preprocessor macros to optimize performance for different use cases.
-
-### Available Macros
-
-| Macro | Description | Trade-off |
-|-------|-------------|-----------|
-| `AUTODIFF_FAST` | Enables aggressive inlining with `AD_INLINE` attribute | Faster execution, longer compilation time |
-| `AUTODIFF_SCALAR_OPTS` | Enables optimized scalar-AutoDiff operations | Faster scalar ops, more code |
-| `AUTODIFF_ITER_MUL_OPT` | Uses precomputed Leibniz coefficients for multiplication | Fastest multiplication, compile-time cost |
-| `AUTODIFF_ITER_MUL` | Uses iterative (non-recursive) multiplication | Balanced speed/compile-time |
-
-### Usage
-
-```bash
-# Basic compilation
-g++ -std=c++20 -O3 main.cpp -o main
-
-# With all optimizations
-g++ -std=c++20 -O3 -DAUTODIFF_FAST -DAUTODIFF_SCALAR_OPTS -DAUTODIFF_ITER_MUL_OPT main.cpp -o main
-
-# Balanced (recommended for most cases)
-g++ -std=c++20 -O3 -DAUTODIFF_FAST -DAUTODIFF_SCALAR_OPTS main.cpp -o main
-
-# With iterative multiplication (good compile times)
-g++ -std=c++20 -O3 -DAUTODIFF_FAST -DAUTODIFF_ITER_MUL main.cpp -o main
-```
-
-### Macro Details
-
-#### `AUTODIFF_FAST`
-
-When defined, `AUTODIFF_MAYBE_INLINE` becomes `AD_INLINE` (force inline). Otherwise, it's just `inline`.
-
-```cpp
-// Without AUTODIFF_FAST: AUTODIFF_MAYBE_INLINE = inline
-// With AUTODIFF_FAST:    AUTODIFF_MAYBE_INLINE = __attribute__((always_inline)) inline
-```
-
-#### `AUTODIFF_SCALAR_OPTS`
-
-Enables specialized overloads for operations between AutoDiff and scalars:
-
-```cpp
-using namespace autodiff;
-
-// Without AUTODIFF_SCALAR_OPTS: scalar * AutoDiff goes through generic code path
-// With AUTODIFF_SCALAR_OPTS: optimized element-wise multiplication
-AutoDiff<double, 2, 2> f = a * 2.0;  // Each derivative multiplied by 2
-```
-
-#### `AUTODIFF_ITER_MUL_OPT`
-
-Uses `LeibnizDiff` to precompute all multinomial coefficients and array offsets at compile time. Best performance but increases compile time for high orders.
-
-#### `AUTODIFF_ITER_MUL`
-
-Uses an iterative implementation without precomputed caches. Good balance between runtime performance and compile time.
-
-### Recommended Configurations
-
-| Use Case | Flags |
-|----------|-------|
-| **Development/Debugging** | `-O2` |
-| **Production (balanced)** | `-O3 -DAUTODIFF_FAST -DAUTODIFF_SCALAR_OPTS` |
-| **Maximum Performance** | `-O3 -DAUTODIFF_FAST -DAUTODIFF_SCALAR_OPTS -DAUTODIFF_ITER_MUL_OPT` |
-| **Fast Compile Times** | `-O3 -DAUTODIFF_SCALAR_OPTS` |
-| **High-Order Derivatives** | `-O3 -DAUTODIFF_FAST -DAUTODIFF_ITER_MUL` |
-
----
-
-## ⚡ Performance
+## Performance
 
 ### Storage Complexity
 
@@ -295,90 +251,57 @@ Storage Size = C(Nvars + Norder, Norder)
 
 ### Storage Layout
 
-Derivatives are stored in graded colexicographic order, grouped by total order:
+Derivatives are stored in graded colexicographic order:
 
 ```
 For 3 variables (x, y, z) and order 2:
 [f, fx, fy, fz, fxx, fxy, fxz, fyy, fyz, fzz]
- ↑   ↑-------↑   ↑---------------------------↑
- │   1st order   2nd order derivatives
+ ↑   └──────┘   └─────────────────────────┘
+ │   1st order        2nd order
  value
 ```
 
-### Benchmarking Tips
+### GPU Optimization
 
-```cpp
-#include <autodiff/autodiff.hpp>
-#include <chrono>
-
-using namespace autodiff;
-
-// Measure overhead vs raw computation
-auto start = std::chrono::high_resolution_clock::now();
-
-for (int i = 0; i < N; i++) {
-    auto result = compute(x, y, z);
-    volatile auto v = result.value();  // Prevent optimization
-}
-
-auto end = std::chrono::high_resolution_clock::now();
-```
+XDiff automatically detects GPU backends and uses:
+- Thread-local scratch space on CPU for expression evaluation
+- Direct evaluation on GPU to avoid shared state issues
+- Aggressive inlining via `__forceinline__` on CUDA/HIP
 
 ---
 
-## 🔬 Advanced Usage
+## Advanced Usage
 
 ### Extracting Derivative Objects
 
 ```cpp
-using namespace autodiff;
+Symbol<0> x;
+Symbol<1> y;
 
-Variable<0> x;
-Variable<1> y;
-
-AutoDiff<double, 3, 2> f(2.0, x);
+Dual<double, 2, 3> f(x, 2.0);
 auto g = f * f * f;  // g = x³
 
-// Get df/dx as a new AutoDiff (with its own derivatives)
-auto dg_dx = g.reduced_diff(x);  // AutoDiff<double, 2, 2>
+// Get dg/dx as a new Dual (with its own derivatives)
+auto dg_dx = g.reduced_diff_wrt(x);  // Dual<double, 2, 2>
 
-// dg_dx.value() = d(x³)/dx = 3x²
-// dg_dx.diff_value(x) = d²(x³)/dx² = 6x
+// dg_dx.value() = d(x³)/dx = 3x² = 12
+// dg_dx.get_diff_wrt(x) = d²(x³)/dx² = 6x = 12
 ```
 
-### Compile-Time Optimization
+### Runtime Variable Indices
 
 ```cpp
-using namespace autodiff;
+// When axis isn't known at compile time
+Dual<double, 3, 2> f(2.0, axis);  // axis is a runtime size_t
 
-// Use cmpl_reduced_diff for compile-time known indices
-Variable<0> x;
-Variable<1> y;
-auto dg = g.cmpl_reduced_diff(x, y);
-
-// Equivalent to reduced_diff(0, 1) but with better optimization
-```
-
-### Creating Constants
-
-```cpp
-using namespace autodiff;
-
-// Explicit constant (derivatives = 0)
-AutoDiff<double, 2, 2> c(3.14159);
-
-// In expressions, scalars are automatically treated as constants
-auto f = a * 2.0 + 1.0;  // 2.0 and 1.0 are constants
+// Or use runtime Variable
+Variable<double, -1> x(3.0, 0);  // Axis specified at runtime
 ```
 
 ---
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
 
 ---
-
-<div align="center">
-
-</div>
