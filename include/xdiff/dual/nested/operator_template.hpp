@@ -1,8 +1,8 @@
-#ifndef XDIFF_DUAL_RECURSIVE_OPERATOR_TEMPLATE_HPP
-#define XDIFF_DUAL_RECURSIVE_OPERATOR_TEMPLATE_HPP
+#ifndef XDIFF_DUAL_NESTED_OPERATOR_TEMPLATE_HPP
+#define XDIFF_DUAL_NESTED_OPERATOR_TEMPLATE_HPP
 
-#include <iostream>
-#include "../../rules/math.hpp"
+#include <iostream> // IWYU pragma: keep
+#include "../../rules/math.hpp" // IWYU pragma: keep
 
 #define XDIFF_ASSERT_REC_DUAL_BINARY_OPERATION(a, b) \
     assert(a.nvars() == b.nvars() && "All RecursiveDuals must have the same number of derivatives"); \
@@ -158,7 +158,7 @@ binary_op_impl(const Dual<T, NVARS, NORDER, Layout::Nested>& a, const F& b) {
 // ------------------------------ Operator macros ------------------------------
 
 // Unary operation
-#define XDIFF_DEFINE_RECURSIVE_DUAL_UNARY_OPERATION(NAME, ASSIGN_NAME, STRUCT) \
+#define XDIFF_DEFINE_NESTED_DUAL_UNARY_OPERATION(NAME, ASSIGN_NAME, STRUCT) \
 template<typename T, size_t NVARS, size_t NORDER> \
 XDIFF_INLINE_HOST_DEVICE \
 Dual<T, NVARS, NORDER, Layout::Nested>& ASSIGN_NAME(Dual<T, NVARS, NORDER, Layout::Nested>& out, \
@@ -178,7 +178,7 @@ auto NAME(const Dual<T, NVARS, NORDER, Layout::Nested>& arg) { \
 
 
 // Binary operation
-#define XDIFF_DEFINE_RECURSIVE_DUAL_BINARY_OPERATION(NAME, ASSIGN_NAME, STRUCT) \
+#define XDIFF_DEFINE_NESTED_DUAL_BINARY_OPERATION(NAME, ASSIGN_NAME, STRUCT) \
 template<typename T, size_t NVARS, size_t NORDER> \
 XDIFF_INLINE_HOST_DEVICE Dual<T,NVARS,NORDER,Layout::Nested>& ASSIGN_NAME(Dual<T,NVARS,NORDER,Layout::Nested>& out, \
     const Dual<T,NVARS,NORDER,Layout::Nested>& a, \
@@ -219,4 +219,4 @@ XDIFF_INLINE_HOST_DEVICE auto NAME(const Dual<T,NVARS,NORDER,Layout::Nested>& a,
 
 
 
-#endif //XDIFF_DUAL_RECURSIVE_OPERATOR_TEMPLATE_HPP
+#endif //XDIFF_DUAL_NESTED_OPERATOR_TEMPLATE_HPP

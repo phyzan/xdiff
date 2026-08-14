@@ -1,5 +1,5 @@
-#ifndef XDIFF_DUAL_EFFICIENT_OPERATORS_HPP
-#define XDIFF_DUAL_EFFICIENT_OPERATORS_HPP
+#ifndef XDIFF_FLAT_DUAL_OPERATORS_HPP
+#define XDIFF_FLAT_DUAL_OPERATORS_HPP
 
 
 #include "../dual.hpp"
@@ -11,7 +11,7 @@
 // ------------------------------ Operator macros ------------------------------
 
 // Unary operation
-#define XDIFF_DEFINE_EFFICIENT_DUAL_UNARY_OPERATION(NAME, ASSIGN_NAME, STRUCT) \
+#define XDIFF_DEFINE_FLAT_DUAL_UNARY_OPERATION(NAME, ASSIGN_NAME, STRUCT) \
 template<typename T, size_t NVARS, size_t NORDER> \
 XDIFF_INLINE_HOST_DEVICE \
 XDIFF_DUAL& ASSIGN_NAME(XDIFF_DUAL& out, const XDIFF_DUAL& arg) { \
@@ -29,7 +29,7 @@ XDIFF_DUAL NAME(const XDIFF_DUAL& arg) { \
 
 
 // Binary operation
-#define XDIFF_DEFINE_EFFICIENT_DUAL_BINARY_OPERATION(NAME, ASSIGN_NAME, STRUCT) \
+#define XDIFF_DEFINE_FLAT_DUAL_BINARY_OPERATION(NAME, ASSIGN_NAME, STRUCT) \
 template<typename T, size_t NVARS, size_t NORDER> \
 XDIFF_INLINE_HOST_DEVICE XDIFF_DUAL& ASSIGN_NAME(XDIFF_DUAL& out, \
     const XDIFF_DUAL& a, \
@@ -217,37 +217,37 @@ XDIFF_DUAL& operator/=(XDIFF_DUAL& a, const F& b){
 
 
 
-XDIFF_DEFINE_EFFICIENT_DUAL_BINARY_OPERATION(operator+, assign_add, xdiff::detail::rules::Add)
-XDIFF_DEFINE_EFFICIENT_DUAL_BINARY_OPERATION(operator-, assign_sub, xdiff::detail::rules::Sub)
-XDIFF_DEFINE_EFFICIENT_DUAL_BINARY_OPERATION(operator*, assign_mul, xdiff::detail::rules::Mul)
-XDIFF_DEFINE_EFFICIENT_DUAL_BINARY_OPERATION(operator/, assign_div, xdiff::detail::rules::Div)
-XDIFF_DEFINE_EFFICIENT_DUAL_BINARY_OPERATION(pow, assign_pow, xdiff::detail::rules::Pow)
+XDIFF_DEFINE_FLAT_DUAL_BINARY_OPERATION(operator+, assign_add, xdiff::detail::rules::Add)
+XDIFF_DEFINE_FLAT_DUAL_BINARY_OPERATION(operator-, assign_sub, xdiff::detail::rules::Sub)
+XDIFF_DEFINE_FLAT_DUAL_BINARY_OPERATION(operator*, assign_mul, xdiff::detail::rules::Mul)
+XDIFF_DEFINE_FLAT_DUAL_BINARY_OPERATION(operator/, assign_div, xdiff::detail::rules::Div)
+XDIFF_DEFINE_FLAT_DUAL_BINARY_OPERATION(pow, assign_pow, xdiff::detail::rules::Pow)
 
 
 
-XDIFF_DEFINE_EFFICIENT_DUAL_UNARY_OPERATION(operator+, assign_pos, xdiff::detail::rules::Pos)
-XDIFF_DEFINE_EFFICIENT_DUAL_UNARY_OPERATION(operator-, assign_neg, xdiff::detail::rules::Neg)
-XDIFF_DEFINE_EFFICIENT_DUAL_UNARY_OPERATION(abs, assign_abs, xdiff::detail::rules::Abs)
-XDIFF_DEFINE_EFFICIENT_DUAL_UNARY_OPERATION(log, assign_log, xdiff::detail::rules::Log)
-XDIFF_DEFINE_EFFICIENT_DUAL_UNARY_OPERATION(log10, assign_log10, xdiff::detail::rules::Log10)
-XDIFF_DEFINE_EFFICIENT_DUAL_UNARY_OPERATION(exp, assign_exp, xdiff::detail::rules::Exp)
-XDIFF_DEFINE_EFFICIENT_DUAL_UNARY_OPERATION(sqrt, assign_sqrt, xdiff::detail::rules::Sqrt)
-XDIFF_DEFINE_EFFICIENT_DUAL_UNARY_OPERATION(sin, assign_sin, xdiff::detail::rules::Sin)
-XDIFF_DEFINE_EFFICIENT_DUAL_UNARY_OPERATION(cos, assign_cos, xdiff::detail::rules::Cos)
-XDIFF_DEFINE_EFFICIENT_DUAL_UNARY_OPERATION(tan, assign_tan, xdiff::detail::rules::Tan)
-XDIFF_DEFINE_EFFICIENT_DUAL_UNARY_OPERATION(cot, assign_cot, xdiff::detail::rules::Cot)
-XDIFF_DEFINE_EFFICIENT_DUAL_UNARY_OPERATION(sec, assign_sec, xdiff::detail::rules::Sec)
-XDIFF_DEFINE_EFFICIENT_DUAL_UNARY_OPERATION(csc, assign_csc, xdiff::detail::rules::Csc)
-XDIFF_DEFINE_EFFICIENT_DUAL_UNARY_OPERATION(asin, assign_asin, xdiff::detail::rules::ArcSin)
-XDIFF_DEFINE_EFFICIENT_DUAL_UNARY_OPERATION(acos, assign_acos, xdiff::detail::rules::ArcCos)
-XDIFF_DEFINE_EFFICIENT_DUAL_UNARY_OPERATION(atan, assign_atan, xdiff::detail::rules::ArcTan)
-XDIFF_DEFINE_EFFICIENT_DUAL_UNARY_OPERATION(acot, assign_acot, xdiff::detail::rules::ArcCot)
-XDIFF_DEFINE_EFFICIENT_DUAL_UNARY_OPERATION(asec, assign_asec, xdiff::detail::rules::ArcSec)
-XDIFF_DEFINE_EFFICIENT_DUAL_UNARY_OPERATION(acsc, assign_acsc, xdiff::detail::rules::ArcCsc)
-XDIFF_DEFINE_EFFICIENT_DUAL_UNARY_OPERATION(sinh, assign_sinh, xdiff::detail::rules::Sinh)
-XDIFF_DEFINE_EFFICIENT_DUAL_UNARY_OPERATION(cosh, assign_cosh, xdiff::detail::rules::Cosh)
-XDIFF_DEFINE_EFFICIENT_DUAL_UNARY_OPERATION(tanh, assign_tanh, xdiff::detail::rules::Tanh)
-XDIFF_DEFINE_EFFICIENT_DUAL_UNARY_OPERATION(erf, assign_erf, xdiff::detail::rules::Erf)
+XDIFF_DEFINE_FLAT_DUAL_UNARY_OPERATION(operator+, assign_pos, xdiff::detail::rules::Pos)
+XDIFF_DEFINE_FLAT_DUAL_UNARY_OPERATION(operator-, assign_neg, xdiff::detail::rules::Neg)
+XDIFF_DEFINE_FLAT_DUAL_UNARY_OPERATION(abs, assign_abs, xdiff::detail::rules::Abs)
+XDIFF_DEFINE_FLAT_DUAL_UNARY_OPERATION(log, assign_log, xdiff::detail::rules::Log)
+XDIFF_DEFINE_FLAT_DUAL_UNARY_OPERATION(log10, assign_log10, xdiff::detail::rules::Log10)
+XDIFF_DEFINE_FLAT_DUAL_UNARY_OPERATION(exp, assign_exp, xdiff::detail::rules::Exp)
+XDIFF_DEFINE_FLAT_DUAL_UNARY_OPERATION(sqrt, assign_sqrt, xdiff::detail::rules::Sqrt)
+XDIFF_DEFINE_FLAT_DUAL_UNARY_OPERATION(sin, assign_sin, xdiff::detail::rules::Sin)
+XDIFF_DEFINE_FLAT_DUAL_UNARY_OPERATION(cos, assign_cos, xdiff::detail::rules::Cos)
+XDIFF_DEFINE_FLAT_DUAL_UNARY_OPERATION(tan, assign_tan, xdiff::detail::rules::Tan)
+XDIFF_DEFINE_FLAT_DUAL_UNARY_OPERATION(cot, assign_cot, xdiff::detail::rules::Cot)
+XDIFF_DEFINE_FLAT_DUAL_UNARY_OPERATION(sec, assign_sec, xdiff::detail::rules::Sec)
+XDIFF_DEFINE_FLAT_DUAL_UNARY_OPERATION(csc, assign_csc, xdiff::detail::rules::Csc)
+XDIFF_DEFINE_FLAT_DUAL_UNARY_OPERATION(asin, assign_asin, xdiff::detail::rules::ArcSin)
+XDIFF_DEFINE_FLAT_DUAL_UNARY_OPERATION(acos, assign_acos, xdiff::detail::rules::ArcCos)
+XDIFF_DEFINE_FLAT_DUAL_UNARY_OPERATION(atan, assign_atan, xdiff::detail::rules::ArcTan)
+XDIFF_DEFINE_FLAT_DUAL_UNARY_OPERATION(acot, assign_acot, xdiff::detail::rules::ArcCot)
+XDIFF_DEFINE_FLAT_DUAL_UNARY_OPERATION(asec, assign_asec, xdiff::detail::rules::ArcSec)
+XDIFF_DEFINE_FLAT_DUAL_UNARY_OPERATION(acsc, assign_acsc, xdiff::detail::rules::ArcCsc)
+XDIFF_DEFINE_FLAT_DUAL_UNARY_OPERATION(sinh, assign_sinh, xdiff::detail::rules::Sinh)
+XDIFF_DEFINE_FLAT_DUAL_UNARY_OPERATION(cosh, assign_cosh, xdiff::detail::rules::Cosh)
+XDIFF_DEFINE_FLAT_DUAL_UNARY_OPERATION(tanh, assign_tanh, xdiff::detail::rules::Tanh)
+XDIFF_DEFINE_FLAT_DUAL_UNARY_OPERATION(erf, assign_erf, xdiff::detail::rules::Erf)
 
 
 } // namespace xdiff
@@ -255,4 +255,4 @@ XDIFF_DEFINE_EFFICIENT_DUAL_UNARY_OPERATION(erf, assign_erf, xdiff::detail::rule
 
 #undef XDIFF_DUAL
 
-#endif // XDIFF_DUAL_EFFICIENT_OPERATORS_HPP
+#endif // XDIFF_FLAT_DUAL_OPERATORS_HPP

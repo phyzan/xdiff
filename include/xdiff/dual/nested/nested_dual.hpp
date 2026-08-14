@@ -1,5 +1,5 @@
-#ifndef XDIFF_DUAL_RECURSIVE_HPP
-#define XDIFF_DUAL_RECURSIVE_HPP
+#ifndef XDIFF_DUAL_NESTED_HPP
+#define XDIFF_DUAL_NESTED_HPP
 
 
 #include "../dual_base.hpp"
@@ -421,7 +421,7 @@ private:
 } // namespace xdiff
 
 
-#include "rdual_operators.hpp"
+#include "nested_dual_operators.hpp" // IWYU pragma: keep
 
 
-#endif // XDIFF_DUAL_RECURSIVE_HPP
+#endif // XDIFF_DUAL_NESTED_HPP

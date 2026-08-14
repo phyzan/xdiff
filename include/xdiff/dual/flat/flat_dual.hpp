@@ -1,5 +1,5 @@
-#ifndef XDIFF_DUAL_EFFICIENT_HPP
-#define XDIFF_DUAL_EFFICIENT_HPP
+#ifndef XDIFF_DUAL_FLAT_HPP
+#define XDIFF_DUAL_FLAT_HPP
 
 #include "itertools.hpp"
 #include <array>
@@ -851,6 +851,6 @@ struct OperandEvaluator<rules::Div<T>> : public BaseOperandEvaluator<rules::Div<
 
 #undef XDIFF_DUAL
 
-#include "edual_operators.hpp"
+#include "flat_dual_operators.hpp" // IWYU pragma: keep
 
-#endif //XDIFF_DUAL_EFFICIENT_HPP
+#endif //XDIFF_DUAL_FLAT_HPP
