@@ -1,9 +1,9 @@
-#ifndef XDIFF_DUAL_EFFICIENT_ITERTOOLS_HPP
-#define XDIFF_DUAL_EFFICIENT_ITERTOOLS_HPP
+#ifndef XDIFF_DUAL_FLAT_ITERTOOLS_HPP
+#define XDIFF_DUAL_FLAT_ITERTOOLS_HPP
 
 #include <cassert>
 #include <numeric>
-#include "../../rules/math.hpp"
+#include "../../rules/math.hpp" // IWYU pragma: keep
 
 namespace xdiff::tools{
 
@@ -142,4 +142,4 @@ public:
 
 } // namespace xdiff::tools
 
-#endif //XDIFF_DUAL_EFFICIENT_ITERTOOLS_HPP
+#endif //XDIFF_DUAL_FLAT_ITERTOOLS_HPP

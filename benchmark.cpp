@@ -71,6 +71,24 @@ using namespace xdiff;
 
 int main(int argc, char *argv[]){
 
+   if (argc != 2) {
+        std::cerr << "Usage: " << argv[0] << " <positive-integer>\n";
+        return 1;
+    }
+
+    std::string_view arg{argv[1]};
+
+    size_t value{};
+    const char* first = arg.data();
+    const char* last = arg.data() + arg.size();
+
+    auto [ptr, ec] = std::from_chars(first, last, value);
+
+    if (ec != std::errc{} || ptr != last || value == 0) {
+        std::cerr << "Error: argument must be a positive integer.\n";
+        return 1;
+    }
+
 #ifdef XDIFF_LAZY_NESTED_DUAL
     std::cout << "XDIFF_LAZY_NESTED_DUAL = ON" << std::endl;
 #else
@@ -79,9 +97,8 @@ int main(int argc, char *argv[]){
 
     using T = double;
 
-    size_t NTIMES = atoi(argv[1]);
+    size_t NTIMES = value;
 
-    // full compile-time nested
     {
         using D = Dual<T, 3, 2, Layout::Nested>;
         D x(1.0, MakeDual{.axis = 0, .nvars = 3});
@@ -90,7 +107,6 @@ int main(int argc, char *argv[]){
         run("Nested + Stack", NTIMES, x, y, z);
     }
 
-    // runtime recursive
     {
         using D = Dual<T, 0, 2, Layout::Nested>;
         D x(1.0, MakeDual{.axis = 0, .nvars = 3});
@@ -99,7 +115,6 @@ int main(int argc, char *argv[]){
         run("Nested + Heap", NTIMES, x, y, z);
     }
 
-    // lazy runtime recursive
     {
         using D = lazy::LazyType<Dual<T, 0, 2, Layout::Nested>>;
         D x(1.0, MakeDual{.axis = 0, .nvars = 3});
@@ -108,7 +123,6 @@ int main(int argc, char *argv[]){
         run("Nested + Heap + Lazy", NTIMES, x, y, z);
     }
 
-    // compile-time memory-efficient
     {
         using D = Dual<T, 3, 2, Layout::Flat>;
         D x(1.0, MakeDual{.axis = 0, .nvars = 3});
@@ -117,7 +131,6 @@ int main(int argc, char *argv[]){
         run("Flat + Stack", NTIMES, x, y, z);
     }
 
-    // plain double
     {
         using D = double;
         D x = 1.0;
@@ -128,4 +141,4 @@ int main(int argc, char *argv[]){
 }
 
 
-// clang++ -std=c++20 -O3 -DNDEBUG -DXDIFF_FAST -DXDIFF_LEIBNIZ_OPT -DXDIFF_SCALAR_OPTIMIZATIONS -DXDIFF_LAZY_NESTED_DUAL -Iinclude -Iexternal/lazy/include -Iexternal/ndspan/include benchmark.cpp -o benchmark && ./benchmark 1000
+// clang++ -std=c++20 -O3 -DNDEBUG -DXDIFF_FAST -DXDIFF_LEIBNIZ_OPT -DXDIFF_SCALAR_OPTIMIZATIONS -DXDIFF_LAZY_NESTED_DUAL -Iinclude -Iexternal/lazy/include -Iexternal/lazy/external/mpreal benchmark.cpp -o benchmark && ./benchmark 1000

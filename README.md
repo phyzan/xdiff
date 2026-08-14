@@ -86,6 +86,28 @@ git submodule update --init --recursive
 
 The `lazy` submodule maximizes performance for runtime-sized derivatives (avoiding heap allocation bottlenecks).
 
+**Linking via CMake:**
+```cmake
+add_subdirectory(path/to/xdiff)
+target_link_libraries(your_target PRIVATE xdiff)
+```
+This gives you `<xdiff/...>` and `<lazy/...>` includes, the required C++20 standard, and the [macros](#macros) below (toggle with e.g. `-DXDIFF_FAST=ON`), all propagated automatically — no need to know xdiff's internal directory layout.
+
+**Syntax highlighting (clangd):** configure the build from the repo root so `compile_commands.json` ends up directly in `build/`, which clangd discovers automatically:
+```bash
+cmake -S . -B build
+```
+or, if you want to compile with some optimization macros enabled:
+```bash
+cmake -S . -B build -DXDIFF_LAZY_NESTED_DUAL=ON -DXDIFF_FAST=ON -DXDIFF_SCALAR_OPTIMIZATIONS=ON
+```
+
+**Running the benchmark:**
+```bash
+cmake --build build
+./build/benchmark 100000
+```
+
 Then include:
 ```cpp
 #include <xdiff/xdiff.hpp>
@@ -203,7 +225,7 @@ See the `lazy` submodule for details.
 |-------|--------|
 | `XDIFF_LAZY_NESTED_DUAL` | Lazy evaluation for `Nested` with `Nvars = 0`. Avoids intermediate heap allocations. |
 | `XDIFF_FAST` | Aggressive inlining for `Flat` layout. Recommended for `Norder ≤ 3`. |
-| `XDIFF_LEIBNIZ_OPT` | Iterative Leibniz-rule formula for `Flat` higher-order derivatives. |
+| `XDIFF_LEIBNIZ_OPT` | Iterative Leibniz-rule formula for `Flat` higher-order derivatives. It will reduce compile time for large differentiation order, but may decrease performance (mainly when compiling with `g++`) |
 | `XDIFF_SCALAR_OPTIMIZATIONS` | Optimized `Dual`-scalar operations for `Flat` layout. |
 
 All improve performance at the cost of compile time. For higher-order derivatives, prefer using the `clang++` compiler when compiling with `-O3` and `-DXDIFF_FAST`, as it inlines more aggressively and faster than `g++` does, when testing the `Layout::Flat` template parameter.
