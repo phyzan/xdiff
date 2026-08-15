@@ -90,127 +90,122 @@ concept isAnyDual = requires { typename D::value_type; } && isDual<D, typename D
 // ----------------------  Unary operations ------------------------
 
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_pos(XDIFF_DUAL& out, const XDIFF_DUAL& arg) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_pos(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_neg(XDIFF_DUAL& out, const XDIFF_DUAL& arg) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_neg(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_abs(XDIFF_DUAL& out, const XDIFF_DUAL& arg) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_abs(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_log(XDIFF_DUAL& out, const XDIFF_DUAL& arg) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_log(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_log10(XDIFF_DUAL& out, const XDIFF_DUAL& arg) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_log10(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_exp(XDIFF_DUAL& out, const XDIFF_DUAL& arg) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_exp(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sqrt(XDIFF_DUAL& out, const XDIFF_DUAL& arg) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sqrt(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sin(XDIFF_DUAL& out, const XDIFF_DUAL& arg) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sin(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_cos(XDIFF_DUAL& out, const XDIFF_DUAL& arg) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_cos(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_tan(XDIFF_DUAL& out, const XDIFF_DUAL& arg) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_tan(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_cot(XDIFF_DUAL& out, const XDIFF_DUAL& arg) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_cot(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sec(XDIFF_DUAL& out, const XDIFF_DUAL& arg) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sec(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_csc(XDIFF_DUAL& out, const XDIFF_DUAL& arg) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_csc(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_asin(XDIFF_DUAL& out, const XDIFF_DUAL& arg) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_asin(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_acos(XDIFF_DUAL& out, const XDIFF_DUAL& arg) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_acos(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_atan(XDIFF_DUAL& out, const XDIFF_DUAL& arg) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_atan(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_acot(XDIFF_DUAL& out, const XDIFF_DUAL& arg) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_acot(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_asec(XDIFF_DUAL& out, const XDIFF_DUAL& arg) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_asec(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_acsc(XDIFF_DUAL& out, const XDIFF_DUAL& arg) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_acsc(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sinh(XDIFF_DUAL& out, const XDIFF_DUAL& arg) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sinh(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_cosh(XDIFF_DUAL& out, const XDIFF_DUAL& arg) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_cosh(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_tanh(XDIFF_DUAL& out, const XDIFF_DUAL& arg) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_tanh(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_erf(XDIFF_DUAL& out, const XDIFF_DUAL& arg) XDIFF_NO_DEF;
-
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_erf(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
 // ----------------------  Binary operations ------------------------
 
 
 // Addition
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_add(XDIFF_DUAL& out, const XDIFF_DUAL& a, const XDIFF_DUAL& b) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_add(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
 template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_add(XDIFF_DUAL& out, const F& a, const XDIFF_DUAL& b) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_add(XDIFF_DUAL& /*out*/, const F& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
 template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_add(XDIFF_DUAL& out, const XDIFF_DUAL& a, const F& b) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_add(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
 // Subtraction
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sub(XDIFF_DUAL& out, const XDIFF_DUAL& a, const XDIFF_DUAL& b) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sub(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
+template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sub(XDIFF_DUAL& /*out*/, const F& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
 template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sub(XDIFF_DUAL& out, const F& a, const XDIFF_DUAL& b) XDIFF_NO_DEF;
-
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sub(XDIFF_DUAL& out, const XDIFF_DUAL& a, const F& b) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sub(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
 // Multiplication
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_mul(XDIFF_DUAL& out, const XDIFF_DUAL& a, const XDIFF_DUAL& b) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_mul(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
+template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_mul(XDIFF_DUAL& /*out*/, const F& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
 template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_mul(XDIFF_DUAL& out, const F& a, const XDIFF_DUAL& b) XDIFF_NO_DEF;
-
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_mul(XDIFF_DUAL& out, const XDIFF_DUAL& a, const F& b) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_mul(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
 // Division
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_div(XDIFF_DUAL& out, const XDIFF_DUAL& a, const XDIFF_DUAL& b) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_div(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
+template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_div(XDIFF_DUAL& /*out*/, const F& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
 template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_div(XDIFF_DUAL& out, const F& a, const XDIFF_DUAL& b) XDIFF_NO_DEF;
-
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_div(XDIFF_DUAL& out, const XDIFF_DUAL& a, const F& b) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_div(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
 // Power
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_pow(XDIFF_DUAL& out, const XDIFF_DUAL& a, const XDIFF_DUAL& b) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_pow(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
+template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_pow(XDIFF_DUAL& /*out*/, const F& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
 template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_pow(XDIFF_DUAL& out, const F& a, const XDIFF_DUAL& b) XDIFF_NO_DEF;
-
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_pow(XDIFF_DUAL& out, const XDIFF_DUAL& a, const F& b) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_pow(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
 
 // ---------------------- Compound assignment operations ------------------------
@@ -218,32 +213,28 @@ XDIFF_HOST_DEVICE XDIFF_DUAL& assign_pow(XDIFF_DUAL& out, const XDIFF_DUAL& a, c
 
 // Addition
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_add(XDIFF_DUAL& out, const XDIFF_DUAL& arg) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_add(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
 template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_add(XDIFF_DUAL& out, const F& arg) XDIFF_NO_DEF;
-
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_add(XDIFF_DUAL& /*out*/, const F& /*arg*/) XDIFF_NO_DEF;
 
 // Subtraction
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_sub(XDIFF_DUAL& out, const XDIFF_DUAL& arg) XDIFF_NO_DEF;
-
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_sub(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_sub(XDIFF_DUAL& out, const F& arg) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_sub(XDIFF_DUAL& /*out*/, const F& /*arg*/) XDIFF_NO_DEF;
 
 // Multiplication
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_mul(XDIFF_DUAL& out, const XDIFF_DUAL& arg) XDIFF_NO_DEF;
-
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_mul(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_mul(XDIFF_DUAL& out, const F& arg) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_mul(XDIFF_DUAL& /*out*/, const F& /*arg*/) XDIFF_NO_DEF;
 
 // Division
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_div(XDIFF_DUAL& out, const XDIFF_DUAL& arg) XDIFF_NO_DEF;
-
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_div(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_div(XDIFF_DUAL& out, const F& arg) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_div(XDIFF_DUAL& /*out*/, const F& /*arg*/) XDIFF_NO_DEF;
 
 
 
@@ -252,92 +243,84 @@ XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_div(XDIFF_DUAL& out, const F& arg)
 
 // Unary +
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL operator+(const XDIFF_DUAL& a) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL operator+(const XDIFF_DUAL& /*a*/) XDIFF_NO_DEF;
 
 // Unary -
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL operator-(const XDIFF_DUAL& a) XDIFF_NO_DEF;
-
+XDIFF_HOST_DEVICE XDIFF_DUAL operator-(const XDIFF_DUAL& /*a*/) XDIFF_NO_DEF;
 // Addition
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL operator+(const XDIFF_DUAL& a, const XDIFF_DUAL& b) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL operator+(const XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
 template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL operator+(const XDIFF_DUAL& a, const F& b) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL operator+(const XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
 template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL operator+(const F& a, const XDIFF_DUAL& b) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL operator+(const F& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
 // Subtraction
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL operator-(const XDIFF_DUAL& a, const XDIFF_DUAL& b) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL operator-(const XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
+template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+XDIFF_HOST_DEVICE XDIFF_DUAL operator-(const XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
 template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL operator-(const XDIFF_DUAL& a, const F& b) XDIFF_NO_DEF;
-
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL operator-(const F& a, const XDIFF_DUAL& b) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL operator-(const F& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
 // Multiplication
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL operator*(const XDIFF_DUAL& a, const XDIFF_DUAL& b) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL operator*(const XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
+template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+XDIFF_HOST_DEVICE XDIFF_DUAL operator*(const XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
 template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL operator*(const XDIFF_DUAL& a, const F& b) XDIFF_NO_DEF;
-
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL operator*(const F& a, const XDIFF_DUAL& b) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL operator*(const F& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
 // Division
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL operator/(const XDIFF_DUAL& a, const XDIFF_DUAL& b) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL operator/(const XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
+template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+XDIFF_HOST_DEVICE XDIFF_DUAL operator/(const XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
 template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL operator/(const XDIFF_DUAL& a, const F& b) XDIFF_NO_DEF;
-
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL operator/(const F& a, const XDIFF_DUAL& b) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL operator/(const F& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
 // Power
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL pow(const XDIFF_DUAL& a, const XDIFF_DUAL& b) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL pow(const XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
+template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+XDIFF_HOST_DEVICE XDIFF_DUAL pow(const XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
 template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL pow(const XDIFF_DUAL& a, const F& b) XDIFF_NO_DEF;
-
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL pow(const F& a, const XDIFF_DUAL& b) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL pow(const F& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
 
 // -------------------------------- Compound assignment operator overloads --------------------------------
 
 // Addition
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& operator+=(XDIFF_DUAL& a, const XDIFF_DUAL& b) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& operator+=(XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
 template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& operator+=(XDIFF_DUAL& a, const F& b) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& operator+=(XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
 // Subtraction
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& operator-=(XDIFF_DUAL& a, const XDIFF_DUAL& b) XDIFF_NO_DEF;
-
+XDIFF_HOST_DEVICE XDIFF_DUAL& operator-=(XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& operator-=(XDIFF_DUAL& a, const F& b) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& operator-=(XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
 // Multiplication
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& operator*=(XDIFF_DUAL& a, const XDIFF_DUAL& b) XDIFF_NO_DEF;
-
+XDIFF_HOST_DEVICE XDIFF_DUAL& operator*=(XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& operator*=(XDIFF_DUAL& a, const F& b) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& operator*=(XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
 // Division
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& operator/=(XDIFF_DUAL& a, const XDIFF_DUAL& b) XDIFF_NO_DEF;
-
+XDIFF_HOST_DEVICE XDIFF_DUAL& operator/=(XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& operator/=(XDIFF_DUAL& a, const F& b) XDIFF_NO_DEF;
+XDIFF_HOST_DEVICE XDIFF_DUAL& operator/=(XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
 
 // -------------------------------- Comparison operator overloads --------------------------------
