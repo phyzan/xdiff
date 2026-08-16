@@ -190,8 +190,8 @@ public:
     XDIFF_INLINE_HOST_DEVICE
     explicit Dual(U&& value, MakeDual md = {.axis = -1, .nvars=NVARS, .order=NORDER}) {
         data_[0] = std::forward<U>(value);
-        assert(md.nvars == NVARS || md.nvars == 0 && "nvars must match NVARS for compile-time known number of variables in Dual");
-        assert(md.order == NORDER || md.order == 0 && "order must match NORDER for compile-time known order in Dual");
+        assert((md.nvars == NVARS || md.nvars == 0) && "nvars must match NVARS for compile-time known number of variables in Dual");
+        assert((md.order == NORDER || md.order == 0) && "order must match NORDER for compile-time known order in Dual");
         assert(md.axis < int(NVARS) && "Axis index must be within the number of derivatives");
         if (md.axis >= 0) {
             data_[1 + md.axis] = 1;
@@ -207,13 +207,15 @@ public:
 
     operator T() const = delete; // Disable implicit conversion to T to avoid accidental loss of derivative information.
 
+    template<std::integral Int>
     XDIFF_INLINE_HOST_DEVICE
-    T& operator[](size_t idx){
+    T& operator[](Int idx){
         return data_[idx];
     }
 
+    template<std::integral Int>
     XDIFF_INLINE_HOST_DEVICE
-    const T& operator[](size_t idx) const {
+    const T& operator[](Int idx) const {
         return data_[idx];
     }
 
@@ -579,7 +581,7 @@ struct LeibnizDiff{
     /// @brief Total number of terms across all Leibniz sums.
     static constexpr size_t total_cache_count(){
         size_t res = 0;
-        auto f_dummy = [&] XDIFF_DEVICE (size_t order, auto order_wrt, auto dummy_order_wrt) XDIFF_LAMBDA_INLINE {
+        auto f_dummy = [&] XDIFF_DEVICE (size_t /*order*/, auto /*order_wrt*/, auto /*dummy_order_wrt*/) XDIFF_LAMBDA_INLINE {
             res++;
         };
         iterate([] XDIFF_DEVICE (auto, auto) XDIFF_LAMBDA_INLINE {}, f_dummy);
