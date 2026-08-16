@@ -246,6 +246,9 @@ using GetDerived = std::conditional_t<(std::is_same_v<Derived, void>), Cls, Deri
 
 namespace xdiff{
 
+template<typename T, size_t N = 0>
+class Vector;
+
 
 template<typename T, size_t N>
 class Vector {
@@ -275,7 +278,7 @@ public:
 
     template<typename... U>
     XDIFF_INLINE_HOST_DEVICE
-    Vector(size_t n, const U&... values) : Vector(private_tag{}, n, std::make_index_sequence<N>{}, values...) {}
+    Vector(size_t n, const U&... constructor_args) : Vector(private_tag{}, n, std::make_index_sequence<N>{}, constructor_args...) {}
 
     template<typename Int>
     XDIFF_INLINE_HOST_DEVICE
@@ -327,12 +330,21 @@ public:
 
 private:
 
+    template<typename A, typename... U>
+    friend Vector<A> make_vector(U&&... items);
+
     struct private_tag{};
 
     template<typename... U, size_t... I>
     XDIFF_INLINE_HOST_DEVICE
     Vector(private_tag, size_t n, std::index_sequence<I...>, const U&... values) : data_{ { ((void)I, T(values...))... } } {
         assert(n == N && "Size mismatch in Vector constructor");
+    }
+
+    template<typename... U>
+    XDIFF_INLINE_HOST_DEVICE
+    Vector(private_tag, U&&... items) : data_{ std::forward<U>(items)... } {
+        static_assert(sizeof...(U) == N, "Size mismatch in Vector constructor");
     }
 
     std::array<T, N> data_;
@@ -360,10 +372,10 @@ public:
     Vector(size_t n, T& value) : data_(n, static_cast<const T&>(value)) {}
 
     template<typename... U>
-    Vector(size_t n, const U&... values) {
+    Vector(size_t n, const U&... constructor_args) {
         data_.reserve(n);
         for (size_t i = 0; i < n; ++i) {
-            data_.emplace_back(values...);
+            data_.emplace_back(constructor_args...);
         }
     }
 
@@ -411,9 +423,27 @@ public:
 
 private:
 
+    template<typename A, typename... U>
+    friend Vector<A> make_vector(U&&... items);
+
+    struct private_tag{};
+
+    template<typename... U>
+    XDIFF_INLINE_HOST_DEVICE
+    Vector(private_tag, U&&... items) {
+        data_.reserve(sizeof...(U));
+        (data_.emplace_back(std::forward<U>(items)), ...);
+    }
+
     std::vector<T> data_;
 
 };
+
+
+template<typename T, typename... U>
+inline Vector<T> make_vector(U&&... items){
+    return Vector<T>(typename Vector<T>::private_tag{}, std::forward<U>(items)...);
+}
 
 } // namespace xdiff
 
