@@ -277,13 +277,15 @@ public:
     XDIFF_INLINE_HOST_DEVICE
     Vector(size_t n, const U&... values) : Vector(private_tag{}, n, std::make_index_sequence<N>{}, values...) {}
 
+    template<typename Int>
     XDIFF_INLINE_HOST_DEVICE
-    T& operator[](size_t i){
+    T& operator[](Int i){
         return data_[i];
     }
 
+    template<typename Int>
     XDIFF_INLINE_HOST_DEVICE
-    const T& operator[](size_t i) const{
+    const T& operator[](Int i) const{
         return data_[i];
     }
 
@@ -365,11 +367,13 @@ public:
         }
     }
 
-    inline T& operator[](size_t i){
+    template<std::integral Int>
+    inline T& operator[](Int i){
         return data_[i];
     }
 
-    inline const T& operator[](size_t i) const{
+    template<std::integral Int>
+    inline const T& operator[](Int i) const{
         return data_[i];
     }
 

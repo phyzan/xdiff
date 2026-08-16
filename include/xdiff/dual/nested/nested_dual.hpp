@@ -96,8 +96,9 @@ public:
         }
     }
 
+    template<std::integral Int>
     XDIFF_INLINE_HOST_DEVICE
-    const T& grad(size_t i) const {
+    const T& grad(Int i) const {
         if constexpr (std::is_same_v<T, G>){
             return (*this)[i];
         } else{
@@ -111,13 +112,15 @@ public:
         return XDIFF_THIS->nvars();
     }
 
+    template<std::integral Int>
     XDIFF_INLINE_HOST_DEVICE
-    const G& operator[](size_t i) const {
+    const G& operator[](Int i) const {
         return XDIFF_THIS->operator[](i);
     }
 
+    template<std::integral Int>
     XDIFF_INLINE_HOST_DEVICE
-    G& operator[](size_t i){
+    G& operator[](Int i){
         return XDIFF_THIS->operator[](i);
     }
 
@@ -137,7 +140,7 @@ protected:
     explicit RecursiveDualBase(U&& value, MakeDual md) requires (!std::is_same_v<T, G>) : true_value(std::forward<U>(value), md) {}
 
     XDIFF_INLINE_HOST_DEVICE
-    RecursiveDualBase(MakeDual md) requires (std::is_same_v<T, G>) {}
+    RecursiveDualBase(MakeDual /*md*/) requires (std::is_same_v<T, G>) {}
 
     XDIFF_INLINE_HOST_DEVICE
     RecursiveDualBase(MakeDual md) requires (!std::is_same_v<T, G>) : true_value(md) {}
@@ -201,14 +204,16 @@ public:
         return NVARS;
     }
 
+    template<std::integral Int>
     XDIFF_INLINE_HOST_DEVICE
-    G& operator[](size_t i){
+    G& operator[](Int i){
         assert(i < NVARS && "Gradient index out of bounds");
         return diffs_[i];
     }
 
+    template<std::integral Int>
     XDIFF_INLINE_HOST_DEVICE
-    const G& operator[](size_t i) const{
+    const G& operator[](Int i) const{
         assert(i < NVARS && "Gradient index out of bounds");
         return diffs_[i];
     }
@@ -290,12 +295,14 @@ public:
         return diffs_.size();
     }
 
-    G& operator[](size_t i){
+    template<std::integral Int>
+    inline G& operator[](Int i){
         assert(i < nvars() && "Gradient index out of bounds");
         return diffs_[i];
     }
 
-    const G& operator[](size_t i) const{
+    template<std::integral Int>
+    inline const G& operator[](Int i) const{
         assert(i < nvars() && "Gradient index out of bounds");
         return diffs_[i];
     }
