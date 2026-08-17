@@ -393,32 +393,49 @@ public:
         return data_.size();
     }
 
-    const T* data() const {
+    inline const T* data() const {
         return data_.data();
     }
 
-    T* data() {
+    inline T* data() {
         return data_.data();
     }
 
-    auto begin() const {
+    inline auto begin() const {
         return data_.begin();
     }
 
-    auto end() const {
+    inline auto end() const {
         return data_.end();
     }
 
-    auto begin() {
+    inline auto begin() {
         return data_.begin();
     }
 
-    auto end() {
+    inline auto end() {
         return data_.end();
     }
 
-    void resize(size_t n) {
+    inline void resize(size_t n) {
         data_.resize(n);
+    }
+
+    inline void reserve(size_t n) {
+        data_.reserve(n);
+    }
+
+    inline void push_back(const T& value){
+        data_.push_back(value);
+    }
+
+    inline void push_back(T&& value){
+        data_.push_back(std::move(value));
+    }
+
+    template<typename... Args>
+    inline void emplace_back(Args&&... args){
+        data_.emplace_back(std::forward<Args>(args)...);
     }
 
 private:
