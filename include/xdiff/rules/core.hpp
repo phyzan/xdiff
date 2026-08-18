@@ -57,7 +57,7 @@ struct Add : BaseOperand<T, Add<T>>{
         } else {
             return a.grad + b.grad;
         }
-    };
+    }
 
 };
 
@@ -85,7 +85,7 @@ struct Sub : BaseOperand<T, Sub<T>>{
         } else {
             return a.grad - b.grad;
         }
-    };
+    }
 
 };
 
@@ -113,7 +113,7 @@ struct Mul : BaseOperand<T, Mul<T>>{
         } else {
             return a.grad * b.value + a.value * b.grad;  // Full product rule
         }
-    };
+    }
 
 };
 
@@ -144,7 +144,7 @@ struct Div : BaseOperand<T, Div<T>>{
             // Full quotient rule
             return (a.grad * b.value - a.value * b.grad) / (b.value * b.value);
         }
-    };
+    }
 
 };
 
@@ -174,7 +174,7 @@ struct Pow : BaseOperand<T, Pow<T>>{
             // General: a^b * (da*b/a + db*log(a))
             return pow(a.value, b.value) * (a.grad * b.value / a.value + b.grad * log(a.value));
         }
-    };
+    }
 
 };
 
