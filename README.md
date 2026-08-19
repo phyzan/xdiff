@@ -5,7 +5,6 @@
 ![C++20](https://img.shields.io/badge/C%2B%2B-20-blue.svg?style=flat&logo=c%2B%2B)
 ![Header Only](https://img.shields.io/badge/Header-Only-green.svg?style=flat)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat)
-![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg?style=flat)
 ![GPU](https://img.shields.io/badge/GPU-CUDA%20%7C%20HIP%20%7C%20SYCL-orange.svg?style=flat)
 
 **A modular C++20 library for arbitrary-order automatic differentiation**
@@ -84,14 +83,14 @@ Clone and initialize submodules:
 git submodule update --init --recursive
 ```
 
-The `lazy` submodule maximizes performance for runtime-sized derivatives (avoiding heap allocation bottlenecks).
+The [lazy](https://github.com/phyzan/lazy) submodule maximizes performance for runtime-sized derivatives (avoiding heap allocation bottlenecks).
 
 **Linking via CMake:**
 ```cmake
 add_subdirectory(path/to/xdiff)
 target_link_libraries(your_target PRIVATE xdiff)
 ```
-This gives you `<xdiff/...>` and `<lazy/...>` includes, the required C++20 standard, and the [macros](#macros) below (toggle with e.g. `-DXDIFF_FAST=ON`), all propagated automatically — no need to know xdiff's internal directory layout.
+This gives you `<xdiff/...>` and `<lazy/...>` includes, the required C++20 standard, and the [macros](#macros) below (toggle with e.g. `-DXDIFF_FAST=ON`).
 
 **Syntax highlighting (clangd):** configure the build from the repo root so `compile_commands.json` ends up directly in `build/`, which clangd discovers automatically:
 ```bash
@@ -228,7 +227,7 @@ See the `lazy` submodule for details.
 | `XDIFF_LEIBNIZ_OPT` | Iterative Leibniz-rule formula for `Flat` higher-order derivatives. It will reduce compile time for large differentiation order, but may decrease performance (mainly when compiling with `g++`) |
 | `XDIFF_SCALAR_OPTIMIZATIONS` | Optimized `Dual`-scalar operations for `Flat` layout. |
 
-See useful [macros](external/lazy/README.md##Macros) for the `lazy` submodule.
+See useful [macros](https://github.com/phyzan/lazy#macros) for the `lazy` submodule.
 
 
 For higher-order derivatives, prefer using the `clang++` compiler when compiling with `-O3` and `-DXDIFF_FAST`, as it inlines more aggressively and faster than `g++` does, when testing the `Layout::Flat` template parameter.
