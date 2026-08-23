@@ -423,8 +423,7 @@ public:
     template<typename Action>
     inline static constexpr void with_default_nvars([[maybe_unused]] size_t nvars, Action&& action) {
         assert((nvars == NVARS) && "nvars must match NVARS for compile-time known number of variables in flat Dual");
-        action();
-        return;
+        std::forward<Action>(action)();
     }
 
 

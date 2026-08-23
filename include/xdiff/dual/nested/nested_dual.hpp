@@ -395,17 +395,15 @@ public:
             size_t old_nvars = Base::get_default_nvars();
             Base::set_default_nvars(nvars);
             try{
-                action();
+                std::forward<Action>(action)();
             } catch(...) {
                 Base::set_default_nvars(old_nvars);
                 throw;
             }
             Base::set_default_nvars(old_nvars);
-            return;
         } else {
             assert((nvars == NVARS) && "nvars must match NVARS for compile-time known number of variables in nested Dual");
-            action();
-            return;
+            std::forward<Action>(action)();
         }
     }
 
