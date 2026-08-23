@@ -398,20 +398,19 @@ public:
         std::array<size_t, Dual<T, NVARS, NEW_ORDER, Layout::Flat>::Ntot> res{};
         size_t n = 0;
 
-        auto nx = MDBase::diff_count(x...);
+        std::array<size_t, NVARS> nx = MDBase::diff_count(x...);
 
         auto call_it = [&] XDIFF_DEVICE <size_t... I>(std::integer_sequence<size_t, I...>) XDIFF_ALWAYS_INLINE {
             [&] XDIFF_DEVICE <size_t... Ord>(std::index_sequence<Ord...>) XDIFF_ALWAYS_INLINE {
                 ([&] XDIFF_DEVICE <size_t OrdI>() XDIFF_ALWAYS_INLINE {
                     using IterType = tools::MultiSetIterator<OrdI+sizeof...(x), Nvars, true>;
-
-                    auto f = [&] XDIFF_DEVICE (const IterType::SetType&, const IterType::CounterType& order_of_var) XDIFF_ALWAYS_INLINE {
-                        if ((((order_of_var[I] >= nx[I])) &&...)){
-                            res[n++] = MDBase::offset(order_of_var[I]...);
+                    IterType::apply_iter_on(
+                        [&] XDIFF_DEVICE (const IterType::SetType&, const IterType::CounterType& order_of_var) XDIFF_ALWAYS_INLINE {
+                            if ((((order_of_var[I] >= nx[I])) &&...)){
+                                res[n++] = MDBase::offset(order_of_var[I]...);
+                            }
                         }
-                    };
-
-                    IterType::apply_iter_on(f);
+                    );
                 }.template operator()<Ord>(), ...);
             }(std::make_index_sequence<NEW_ORDER+1UL>{});
         };
@@ -419,6 +418,16 @@ public:
         call_it(std::make_index_sequence<Nvars>{});
         return res;
     }
+
+
+    template<typename Action>
+    inline static constexpr void with_default_nvars([[maybe_unused]] size_t nvars, Action&& action) {
+        assert((nvars == NVARS) && "nvars must match NVARS for compile-time known number of variables in flat Dual");
+        action();
+        return;
+    }
+
+
 private:
 
     DataType data_ = {};

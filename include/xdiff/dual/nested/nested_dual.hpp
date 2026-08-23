@@ -389,6 +389,26 @@ public:
         }, shape);
     }
 
+    template<typename Action>
+    inline static constexpr void with_default_nvars([[maybe_unused]] size_t nvars, Action&& action) {
+        if constexpr (NVARS == 0) {
+            size_t old_nvars = Base::get_default_nvars();
+            Base::set_default_nvars(nvars);
+            try{
+                action();
+            } catch(...) {
+                Base::set_default_nvars(old_nvars);
+                throw;
+            }
+            Base::set_default_nvars(old_nvars);
+            return;
+        } else {
+            assert((nvars == NVARS) && "nvars must match NVARS for compile-time known number of variables in nested Dual");
+            action();
+            return;
+        }
+    }
+
 private:
 
     template<typename U, size_t Nv, size_t Nord, Layout St>
