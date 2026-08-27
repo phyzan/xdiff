@@ -179,13 +179,6 @@ XDIFF_INLINE_HOST_DEVICE constexpr decltype(auto) Expand(F&& f){
     return xdiff::detail::Expand_impl(std::forward<F>(f), std::make_index_sequence<N>{});
 }
 
-template<typename T>
-XDIFF_INLINE_HOST_DEVICE constexpr void copy_array(T* dest, const T* src, size_t size){
-    for (size_t i = 0; i < size; ++i) {
-        dest[i] = src[i];
-    }
-}
-
 
 template<typename F, size_t Dim>
 XDIFF_FORCEINLINE constexpr void for_each(F&& f, std::array<size_t, Dim> shape){

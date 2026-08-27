@@ -242,7 +242,7 @@ public:
     ReducedType reduced() const {
         if constexpr (NORDER>0){
             ReducedType out;
-            tools::copy_array(out.data_.data(), data_.data(), ReducedType::Ntot);
+            std::copy(data_.data(), data_.data() + ReducedType::Ntot, out.data_.data());
             return out;
         } else{
             return ReducedType(this->value());
@@ -313,7 +313,7 @@ public:
     Dual diff_wrt(IntType... x) const{
         auto f = this->reduced_diff_wrt(x...);
         Dual res;
-        tools::copy_array(res.data_.data(), f.data_.data(), f.NTOT);
+        std::copy(f.data_.data(), f.data_.data() + f.NTOT, res.data_.data());
         return res;
     }
 
@@ -472,7 +472,7 @@ struct HelperBaseOperandEvaluator{
                         auto R = [&] XDIFF_DEVICE <size_t var>() XDIFF_ALWAYS_INLINE {
                             constexpr size_t Noff_tot = Dual<T, Nvars, AD::REDUCED_ORDER, Layout::Flat>::offset(ord*(var==Ivar)...);
                             constexpr size_t Nelements = Dual<T, Nvars, AD::REDUCED_ORDER, Layout::Flat>::ndiffs(ord)-Dual<T, Nvars, AD::REDUCED_ORDER, Layout::Flat>::local_offset(ord*(var==Ivar)...);
-                            xdiff::tools::copy_array(out.data().data()+n, h[var].data().data()+Noff_tot, Nelements);
+                            std::copy(h[var].data().data()+Noff_tot, h[var].data().data()+Noff_tot+Nelements, out.data().data()+n);
                             n+=Nelements;
                         };
                         (R.template operator()<Ivar>(), ...);
