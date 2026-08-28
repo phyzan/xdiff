@@ -5,7 +5,10 @@
 #include "../dual_base.hpp"
 #include <lazy/lazy.hpp>
 
-
+/*
+TODO
+make the operator[] protected/private
+*/
 
 namespace xdiff::detail{
 
@@ -88,7 +91,7 @@ public:
     
     ~RecursiveDualBase() = default;
 
-    const T& value() const {
+    constexpr const T& value() const {
         if constexpr (std::is_same_v<T, G>){
             return this->true_value;
         } else{
@@ -98,7 +101,7 @@ public:
 
     template<std::integral Int>
     XDIFF_INLINE_HOST_DEVICE
-    const T& grad(Int i) const {
+    constexpr const T& grad(Int i) const {
         if constexpr (std::is_same_v<T, G>){
             return (*this)[i];
         } else{
@@ -114,13 +117,13 @@ public:
 
     template<std::integral Int>
     XDIFF_INLINE_HOST_DEVICE
-    const G& operator[](Int i) const {
+    constexpr const G& operator[](Int i) const {
         return XDIFF_THIS->operator[](i);
     }
 
     template<std::integral Int>
     XDIFF_INLINE_HOST_DEVICE
-    G& operator[](Int i){
+    constexpr G& operator[](Int i){
         return XDIFF_THIS->operator[](i);
     }
 
@@ -206,14 +209,14 @@ public:
 
     template<std::integral Int>
     XDIFF_INLINE_HOST_DEVICE
-    G& operator[](Int i){
+    constexpr G& operator[](Int i){
         assert(i < NVARS && "Gradient index out of bounds");
         return diffs_[i];
     }
 
     template<std::integral Int>
     XDIFF_INLINE_HOST_DEVICE
-    const G& operator[](Int i) const{
+    constexpr const G& operator[](Int i) const{
         assert(i < NVARS && "Gradient index out of bounds");
         return diffs_[i];
     }
@@ -296,13 +299,13 @@ public:
     }
 
     template<std::integral Int>
-    inline G& operator[](Int i){
+    constexpr inline G& operator[](Int i){
         assert(i < nvars() && "Gradient index out of bounds");
         return diffs_[i];
     }
 
     template<std::integral Int>
-    inline const G& operator[](Int i) const{
+    constexpr inline const G& operator[](Int i) const{
         assert(i < nvars() && "Gradient index out of bounds");
         return diffs_[i];
     }
@@ -366,9 +369,31 @@ public:
 
     template<xdiff::traits::isAxis... Int>
     XDIFF_INLINE_HOST_DEVICE
-    const T& get_diff_wrt(Int... x) const{
+    constexpr const T& get_diff_wrt(Int... x) const{
         static_assert(sizeof...(x)<=NORDER, "Number of differentiations requested must be <= NORDER");
         return diff_accessor(*this, x...);
+    }
+
+    template<xdiff::traits::isAxis... Int>
+    requires (NORDER > 1)
+    XDIFF_INLINE_HOST_DEVICE
+    Dual<T, NVARS, NORDER-1, Layout::Nested> trimmed() const{
+        return this->true_value;
+    }
+
+    template<xdiff::traits::isAxis... IntType>
+    XDIFF_INLINE_HOST_DEVICE
+    auto constexpr trimmed_diff_wrt(IntType... x) const{
+        // Returning `auto` and not `const auto&` for compatibility with Dual<Layout=Flat>
+        // TODO : should be able to do <= NORDER.
+        // This must be fixed by allowing NORDER=0 as a template parameter, without that meaning dynamic size
+        // Dynamic size should be NORDER = -1 by changing from size_t -> int
+        static_assert(sizeof...(x) < NORDER, "Number of differentiations requested must be <= NORDER");
+        if constexpr (sizeof...(x) == 0){
+            return (*this);
+        } else {
+            return this->trimmed_diff_wrt_helper(x...);
+        }
     }
 
     static void set_default_nvars(size_t nvars) requires (NVARS == 0) {
@@ -414,12 +439,22 @@ private:
 
     template<size_t NORD, xdiff::traits::isAxis First,xdiff::traits::isAxis... Int>
     XDIFF_INLINE_HOST_DEVICE
-    static const T& diff_accessor(const Dual<T, NVARS, NORD, Layout::Nested>& dual, First x0, Int... x) {
+    static constexpr const T& diff_accessor(const Dual<T, NVARS, NORD, Layout::Nested>& dual, First x0, Int... x) {
         static_assert(sizeof...(x) < NORD, "Number of differentiations requested must be < NORDER");
         if constexpr (sizeof...(x) == 0){
             return dual.grad(x0);
         } else {
             return diff_accessor(dual[x0], x...);
+        }
+    }
+
+    template<xdiff::traits::isAxis First, xdiff::traits::isAxis... IntType>
+    XDIFF_INLINE_HOST_DEVICE
+    constexpr const auto& trimmed_diff_wrt_helper(First x0, IntType... x) const{
+        if constexpr (sizeof...(x) == 0){
+            return (*this)[x0];
+        } else {
+            return (*this)[x0].trimmed_diff_wrt(x...);
         }
     }
 

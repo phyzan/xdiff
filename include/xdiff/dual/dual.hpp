@@ -497,6 +497,24 @@ bool isfinite(const xdiff::XDIFF_DUAL& x){
     return isfinite(x.value());
 }
 
+
+/*
+TODO
+
+Make a StateVector<T, NVARS, NORDER, LAYOUT> class or something like that,
+that simply holds a view of an array as a `const T* data`,
+can perform all iterator magic by defining value_type,
+iterator, const_iterator, begin(), end(),
+operator[] and operator*, and all these are such that
+operator[](i) returns a Dual<T, ...>(data[i], axis=i)
+
+or better yet, make the StateVector be templated as
+StateVector<T, NVARS, NORDER>, and
+overload all operations / functions
+to allow Duals<T, N, ...> to interact with its proxy items
+that are return at operator[]. These items should also have an operator T()
+*/
+
 } // namespace std
 
 #undef XDIFF_DUAL

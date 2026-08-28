@@ -201,7 +201,8 @@ public:
     template<typename U>
     XDIFF_INLINE_HOST_DEVICE
     Dual& operator=(U&& other) requires (!std::is_same_v<std::decay_t<U>, Dual>) {
-        Base::operator=(std::forward<U>(other));
+        std::fill(data_.begin(), data_.end(), 0);
+        data_[0] = std::forward<U>(other);
         return *this;
     }
 
@@ -209,18 +210,18 @@ public:
 
     template<std::integral Int>
     XDIFF_INLINE_HOST_DEVICE
-    T& operator[](Int idx){
+    constexpr T& operator[](Int idx){
         return data_[idx];
     }
 
     template<std::integral Int>
     XDIFF_INLINE_HOST_DEVICE
-    const T& operator[](Int idx) const {
+    constexpr const T& operator[](Int idx) const {
         return data_[idx];
     }
 
     XDIFF_INLINE_HOST_DEVICE
-    const T& value() const {
+    constexpr const T& value() const {
         return data_[0];
     }
 
@@ -232,14 +233,10 @@ public:
 
     /**
      * @brief Returns a reduced-order Dual truncated to NORDER-1.
-     *
-     * Creates a new Dual with the same value but one less maximum order.
-     * Useful for extracting derivatives as new differentiable objects.
-     *
      * @return A Dual with order NORDER-1
      */
     XDIFF_INLINE_HOST_DEVICE
-    ReducedType reduced() const {
+    ReducedType trimmed() const {
         if constexpr (NORDER>0){
             ReducedType out;
             std::copy(data_.data(), data_.data() + ReducedType::Ntot, out.data_.data());
@@ -261,12 +258,12 @@ public:
      *
      * @example
      *     Dual<double, 3, 3> f = ...;
-     *     auto df_dx = f.reduced_diff_wrt(Symbol<0>{});      // df/dx and its derivatives
-     *     auto d2f_dxdy = f.reduced_diff_wrt(Symbol<0>{}, Symbol<1>{});  // d²f/dxdy
+     *     auto df_dx = f.trimmed_diff_wrt(Symbol<0>{});      // df/dx and its derivatives
+     *     auto d2f_dxdy = f.trimmed_diff_wrt(Symbol<0>{}, Symbol<1>{});  // d²f/dxdy
      */
     template<size_t... I>
     XDIFF_MAYBE_INLINE
-    auto constexpr reduced_diff_wrt(Symbol<I>... x) const{
+    auto constexpr trimmed_diff_wrt(Symbol<I>... x) const{
         static_assert(sizeof...(x)<=NORDER, "Number of differentiations requested must be <= NORDER");
         using ResType = typename Dual::Reduced<sizeof...(I)>;
         auto constexpr OFFSETS = offsets_for_reduced_diff(x...);
@@ -287,7 +284,7 @@ public:
      */
     template<xdiff::traits::isAxis... IntType>
     XDIFF_MAYBE_INLINE
-    auto constexpr reduced_diff_wrt(IntType... x) const{
+    auto constexpr trimmed_diff_wrt(IntType... x) const{
         static_assert(sizeof...(x)<=NORDER, "Number of differentiations requested must be <= NORDER");
         using ResType = typename Dual::Reduced<sizeof...(x)>;
         auto offsets = offsets_for_reduced_diff(x...);
@@ -301,7 +298,7 @@ public:
     /**
      * @brief Extracts a partial derivative as a full-order Dual.
      *
-     * Similar to reduced_diff_wrt, but returns a Dual of the same order
+     * Similar to trimmed_diff_wrt, but returns a Dual of the same order
      * (padded with zeros for unavailable higher derivatives).
      *
      * @tparam IntType Axis index types
@@ -311,7 +308,7 @@ public:
     template<xdiff::traits::isAxis... IntType>
     XDIFF_INLINE_HOST_DEVICE
     Dual diff_wrt(IntType... x) const{
-        auto f = this->reduced_diff_wrt(x...);
+        auto f = this->trimmed_diff_wrt(x...);
         Dual res;
         std::copy(f.data_.data(), f.data_.data() + f.NTOT, res.data_.data());
         return res;
@@ -332,7 +329,7 @@ public:
      */
     template<xdiff::traits::isAxis... IntType>
     XDIFF_INLINE_HOST_DEVICE
-    const T& get_diff_wrt(IntType... x) const{
+    constexpr const T& get_diff_wrt(IntType... x) const{
         static_assert(sizeof...(x)<=NORDER, "Number of differentiations requested must be <= NORDER");
         auto nx = MDBase::diff_count(x...);
         return data_[MDBase::offset(nx)];
@@ -381,7 +378,7 @@ public:
     }
 
     /**
-     * @brief Precomputes offsets for reduced_diff_wrt extraction.
+     * @brief Precomputes offsets for trimmed_diff_wrt extraction.
      *
      * Used internally to efficiently extract derivatives into a reduced Dual.
      *
@@ -526,7 +523,7 @@ struct HelperBaseOperandEvaluator{
         template<size_t Nv, size_t No>
         XDIFF_INLINE_DEVICE
         static auto reduced_value(const Dual<T, Nv, No, Layout::Flat>& f){
-            return f.reduced();
+            return f.trimmed();
         }
 
         /// @brief Scalars have trivial reduced representation.
@@ -540,7 +537,7 @@ struct HelperBaseOperandEvaluator{
         template<size_t I>
         XDIFF_INLINE_DEVICE
         static auto reduced_diff(const AD& f){
-            return f.reduced_diff_wrt(Symbol<I>());
+            return f.trimmed_diff_wrt(Symbol<I>());
         }
 
         /// @brief Scalars have zero derivative.
