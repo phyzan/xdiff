@@ -144,6 +144,16 @@ struct MultiDiff{
     }
 };
 
+namespace detail{
+
+// Defined further below, after the Dual class. Declared here so that Dual can grant them raw access to its storage.
+template<typename STRUCT> struct HelperBaseOperandEvaluator;
+template<typename STRUCT> struct BaseOperandEvaluator;
+template<typename STRUCT> struct OperandEvaluator;
+
+} // namespace detail
+
+
 template<typename T, size_t NVARS, size_t NORDER>
 requires (NVARS > 0)
 class Dual<T, NVARS, NORDER, Layout::Flat> : public DualBase<Dual<T, NVARS, NORDER, Layout::Flat>, T, NVARS, Layout::Flat>, public MultiDiff<NVARS, NORDER> {
@@ -188,7 +198,7 @@ public:
     template<typename U>
     requires (!std::is_same_v<std::decay_t<U>, Dual>)
     XDIFF_INLINE_HOST_DEVICE
-    explicit Dual(U&& value, MakeDual md = {.axis = -1, .nvars=NVARS, .order=NORDER}) {
+    explicit Dual(U&& value, MakeDual md = {.axis = -1, .nvars=NVARS, .order=NORDER}) : data_{} {
         data_[0] = std::forward<U>(value);
         assert((md.nvars == NVARS || md.nvars == 0) && "nvars must match NVARS for compile-time known number of variables in Dual");
         assert((md.order == NORDER || md.order == 0) && "order must match NORDER for compile-time known order in Dual");
@@ -208,18 +218,6 @@ public:
 
     operator T() const = delete; // Disable implicit conversion to T to avoid accidental loss of derivative information.
 
-    template<std::integral Int>
-    XDIFF_INLINE_HOST_DEVICE
-    constexpr T& operator[](Int idx){
-        return data_[idx];
-    }
-
-    template<std::integral Int>
-    XDIFF_INLINE_HOST_DEVICE
-    constexpr const T& operator[](Int idx) const {
-        return data_[idx];
-    }
-
     XDIFF_INLINE_HOST_DEVICE
     constexpr const T& value() const {
         return data_[0];
@@ -228,6 +226,13 @@ public:
     XDIFF_INLINE_HOST_DEVICE
     size_t nvars() const {
         return NVARS;
+    }
+
+    // Modifies the value without touching any derivatives
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& insert_value(const T& value) {
+        data_[0] = value;
+        return *this;
     }
 
 
@@ -309,8 +314,8 @@ public:
     XDIFF_INLINE_HOST_DEVICE
     Dual diff_wrt(IntType... x) const{
         auto f = this->trimmed_diff_wrt(x...);
-        Dual res;
-        std::copy(f.data_.data(), f.data_.data() + f.NTOT, res.data_.data());
+        Dual res{};
+        std::copy(f.data_.data(), f.data_.data() + f.Ntot, res.data_.data());
         return res;
     }
 
@@ -347,19 +352,10 @@ public:
         // The number of variables must be the same, but the order can differ.
         // We copy all derivatives that are valid in the target dual.
         constexpr size_t MIN_ORDER = std::min(Norder, NORDER);
-        for (size_t i = 0; i < MIN_ORDER; i++) {
+        constexpr size_t ELEM_COUNT = MultiDiff<NVARS, MIN_ORDER>::Ntot;
+        for (size_t i = 0; i < ELEM_COUNT; i++) {
             dual.data_[i] = data_[i];
         }
-    }
-
-    /// @brief Returns const reference to internal data array.
-    const DataType& data() const {
-        return data_;
-    }
-
-    /// @brief Returns mutable reference to internal data array.
-    DataType& data() {
-        return data_;
     }
 
     /**
@@ -424,9 +420,56 @@ public:
     }
 
 
+protected:
+
+    // The library internals that operate on the raw storage below. Every other user of a Dual goes through the public interface.
+    template<typename STRUCT> friend struct detail::HelperBaseOperandEvaluator;
+    template<typename STRUCT> friend struct detail::BaseOperandEvaluator;
+    template<typename STRUCT> friend struct detail::OperandEvaluator;
+
+    template<typename T2, size_t N2, size_t O2>
+    friend Dual<T2, N2, O2, Layout::Flat>& assign_compound_add(Dual<T2, N2, O2, Layout::Flat>& out, const Dual<T2, N2, O2, Layout::Flat>& arg);
+    template<typename F2, typename T2, size_t N2, size_t O2>
+    friend Dual<T2, N2, O2, Layout::Flat>& assign_compound_add(Dual<T2, N2, O2, Layout::Flat>& out, const F2& arg);
+
+    template<typename T2, size_t N2, size_t O2>
+    friend Dual<T2, N2, O2, Layout::Flat>& assign_compound_sub(Dual<T2, N2, O2, Layout::Flat>& out, const Dual<T2, N2, O2, Layout::Flat>& arg);
+    template<typename F2, typename T2, size_t N2, size_t O2>
+    friend Dual<T2, N2, O2, Layout::Flat>& assign_compound_sub(Dual<T2, N2, O2, Layout::Flat>& out, const F2& arg);
+
+    template<typename F2, typename T2, size_t N2, size_t O2>
+    friend Dual<T2, N2, O2, Layout::Flat>& assign_compound_mul(Dual<T2, N2, O2, Layout::Flat>& out, const F2& arg);
+
+    template<typename F2, typename T2, size_t N2, size_t O2>
+    friend Dual<T2, N2, O2, Layout::Flat>& assign_compound_div(Dual<T2, N2, O2, Layout::Flat>& out, const F2& arg);
+
+    /// @brief Returns a reference to the element at the given offset in the internal data array. Index 0 is the value, and the derivatives follow in graded order.
+    template<std::integral Int>
+    XDIFF_INLINE_HOST_DEVICE
+    constexpr T& operator[](Int idx){
+        return data_[idx];
+    }
+
+    template<std::integral Int>
+    XDIFF_INLINE_HOST_DEVICE
+    constexpr const T& operator[](Int idx) const {
+        return data_[idx];
+    }
+
+    /// @brief Returns const reference to internal data array.
+    const DataType& data() const {
+        return data_;
+    }
+
+    /// @brief Returns mutable reference to internal data array.
+    DataType& data() {
+        return data_;
+    }
+
+
 private:
 
-    DataType data_ = {};
+    DataType data_;
 
 };
 
@@ -688,7 +731,7 @@ struct BaseOperandEvaluator<rules::Mul<T>> : public HelperBaseOperandEvaluator<r
     XDIFF_INLINE_HOST_DEVICE static void apply_diffs(Dual<T, Nvars, Norder, Layout::Flat>& res, const Dual<T, Nvars, Norder, Layout::Flat>& f, const Dual<T, Nvars, Norder, Layout::Flat>& g){
         static_assert(ORDER<=Norder, "ORDER too large");
         constexpr size_t glf = Dual<T, Nvars, Norder, Layout::Flat>::global_offset(ORDER);
-        T* d = res.data()+glf;
+        T* d = res.data().data() + glf;
         using IterType = xdiff::tools::MultiSetIterator<ORDER, Nvars, true>;
 
         [&] XDIFF_DEVICE <size_t... Ivar>(std::index_sequence<Ivar...>) XDIFF_LAMBDA_INLINE {
