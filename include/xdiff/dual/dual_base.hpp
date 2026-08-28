@@ -13,13 +13,13 @@ struct DualBase : xdiff::detail::DualIdentifier<Derived>{
     using value_type = T;
 
     XDIFF_INLINE_HOST_DEVICE
-    const T& value() const {
+    constexpr const T& value() const {
         return XDIFF_THIS->value();
     }
 
     template<xdiff::traits::isAxis... Int>
     XDIFF_INLINE_HOST_DEVICE
-    const T& get_diff_wrt(Int... x) const{
+    constexpr const T& get_diff_wrt(Int... x) const{
         return XDIFF_THIS->get_diff_wrt(x...);
     }
 
