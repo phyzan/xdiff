@@ -11,22 +11,25 @@
 
 namespace xdiff{
 
-namespace detail{
-
-// All autodiff-related classes should inherit from this class. It acts as an identifier.
-template<typename Derived>
-struct DualIdentifier{};
-
-} // namespace detail
 
 enum class Layout : uint8_t {
     Flat,
     Nested
 };
 
-
 template<typename T, size_t NVARS, size_t NORDER, Layout LY>
 class Dual;
+
+namespace detail{
+
+// All autodiff-related classes should inherit from this class. It acts as an identifier.
+template<typename Derived>
+struct DualIdentifier{};
+
+
+} // namespace detail
+
+
 
 // For "nvars" and "order", the zero value is used for the default runtime number (for dynamic number of nvars or order) or compile-time number of variables and order, respectively.
 // For example, if the compile time of nvars is 3, then passing nvars = 0 will use the compile-time value of 3, and no assertion error will be thrown. If the compile time of nvars is 0 (dynamic number of variables), then passing nvars = 0 will use the default runtime number of variables, and no assertion error will be thrown.
@@ -36,6 +39,109 @@ struct MakeDual{
     size_t nvars = 0;
     size_t order = 0;
 };
+
+template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+class StateVector{
+    using DualType = Dual<T, NVARS, NORDER, LY>;
+
+    static_assert(NVARS > 0 || LY == Layout::Nested, "A runtime number of variables (NVARS = 0) is only supported by the Nested layout");
+
+public:
+    using value_type = DualType;
+    using iterator = const DualType*;
+    using const_iterator = const DualType*;
+
+    // The "nvars" and "order" arguments follow the MakeDual convention: the zero value selects the compile-time NVARS / NORDER, or the default runtime number of variables when NVARS is zero.
+    XDIFF_INLINE_HOST_DEVICE
+    StateVector(const T* state_vector, size_t nvars = 0, size_t order = 0) : duals(nv(nvars)){
+        for (size_t i=0; i<duals.size(); i++){
+            duals[i] = DualType{state_vector[i], MakeDual{int(i), duals.size(), order}};
+        }
+    }
+
+    template<std::integral Int>
+    XDIFF_INLINE_HOST_DEVICE
+    const DualType& operator[](Int i) const {
+        return duals[i];
+    }
+
+    XDIFF_INLINE_HOST_DEVICE
+    const DualType* data() const{
+        return duals.data();
+    }
+
+    [[nodiscard]]
+    XDIFF_INLINE_HOST_DEVICE
+    size_t size() const {
+        return duals.size();
+    }
+
+    [[nodiscard]]
+    XDIFF_INLINE_HOST_DEVICE
+    size_t nvars() const {
+        return duals.size();
+    }
+
+    XDIFF_INLINE_HOST_DEVICE
+    const_iterator begin() const {
+        return duals.data();
+    }
+
+    XDIFF_INLINE_HOST_DEVICE
+    const_iterator end() const {
+        return duals.data() + duals.size();
+    }
+
+    XDIFF_INLINE_HOST_DEVICE
+    const_iterator cbegin() const {
+        return begin();
+    }
+
+    XDIFF_INLINE_HOST_DEVICE
+    const_iterator cend() const {
+        return end();
+    }
+
+    template<std::integral Int>
+    XDIFF_INLINE_HOST_DEVICE
+    const DualType* operator+(Int i) const {
+        return duals.data() + i;
+    }
+
+    template<std::integral Int>
+    XDIFF_INLINE_HOST_DEVICE
+    const DualType* operator-(Int i) const {
+        return duals.data() - i;
+    }
+
+    XDIFF_INLINE_HOST_DEVICE
+    const DualType& operator*() const{
+        return duals[0];
+    }
+
+    // Modifies the values of all the duals, leaving every derivative untouched. The "state" array must hold at least size() elements.
+    XDIFF_INLINE_HOST_DEVICE
+    void set_vector(const T* state) {
+        for (size_t i=0; i<duals.size(); i++){
+            duals[i].insert_value(state[i]);
+        }
+    }
+
+private:
+
+    XDIFF_INLINE_HOST_DEVICE
+    static size_t nv(size_t nvars){
+        if constexpr (NVARS > 0){
+            assert((nvars == NVARS || nvars == 0) && "nvars must match NVARS for a compile-time known number of variables in StateVector");
+            return NVARS;
+        } else {
+            return nvars > 0 ? nvars : DualType::get_default_nvars();
+        }
+    }
+
+    Vector<DualType, NVARS> duals;
+};
+
 
 template<typename F, typename DF>
 struct DiffPair;
@@ -497,23 +603,6 @@ bool isfinite(const xdiff::XDIFF_DUAL& x){
     return isfinite(x.value());
 }
 
-
-/*
-TODO
-
-Make a StateVector<T, NVARS, NORDER, LAYOUT> class or something like that,
-that simply holds a view of an array as a `const T* data`,
-can perform all iterator magic by defining value_type,
-iterator, const_iterator, begin(), end(),
-operator[] and operator*, and all these are such that
-operator[](i) returns a Dual<T, ...>(data[i], axis=i)
-
-or better yet, make the StateVector be templated as
-StateVector<T, NVARS, NORDER>, and
-overload all operations / functions
-to allow Duals<T, N, ...> to interact with its proxy items
-that are return at operator[]. These items should also have an operator T()
-*/
 
 } // namespace std
 
