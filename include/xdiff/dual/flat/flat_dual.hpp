@@ -1,8 +1,9 @@
 #ifndef XDIFF_DUAL_FLAT_HPP
 #define XDIFF_DUAL_FLAT_HPP
 
-#include "itertools.hpp"
+#include "lexicographic.hpp"
 #include <array>
+#include <concepts>
 
 
 #ifdef XDIFF_FAST
@@ -16,143 +17,6 @@
 
 namespace xdiff{
 
-template<size_t NVARS, size_t NORDER>
-struct MultiDiff{
-    static constexpr size_t Nvars = NVARS;   ///< Number of independent variables
-    static constexpr size_t Norder = NORDER;   ///< Maximum derivative order
-    static constexpr size_t Ntot = xdiff::tools::comb(NVARS+NORDER, NORDER); ///< Total stored values (value + all derivatives)
-
-    // =========================================================================
-    // Static methods for derivative indexing
-    // =========================================================================
-
-    /**
-     * @brief Returns the number of unique derivatives of a given order.
-     *
-     * For Nvars variables and a specific order, returns C(Nvars+order-1, order).
-     *
-     * @param order The derivative order
-     * @return Number of unique partial derivatives of that order
-     */
-    XDIFF_INLINE_HOST_DEVICE
-    static constexpr size_t ndiffs(size_t order){
-        return tools::comb(NVARS+order-1, order);
-    }
-
-    /**
-     * @brief Computes the local (within-order) offset for a derivative.
-     *
-     * Given the per-variable derivative counts, computes the colexicographic
-     * offset within the group of derivatives of the same total order.
-     *
-     * @tparam IntType Unsigned integral types
-     * @param order Per-variable derivative counts
-     * @return Local offset within the order group
-     */
-    template<std::unsigned_integral... IntType>
-    XDIFF_INLINE_HOST_DEVICE
-    static constexpr size_t local_offset(IntType... order){
-        constexpr size_t NX = sizeof...(order);
-        static_assert(NX>0 && NX<=Nvars );
-        size_t total_order = (static_cast<size_t>(order) + ...);
-        assert(total_order <= NORDER && "diff order must be <= NORDER");
-
-        // Compute colexicographic offset within the group
-        size_t colex_offset = XDIFF_EXPAND(NX, variable,
-            return ([&] XDIFF_DEVICE () XDIFF_ALWAYS_INLINE {
-                constexpr size_t v = variable;
-                size_t truncated_total = XDIFF_EXPAND(NX, I,
-                    return ((static_cast<size_t>(tools::pack_elem<I>(order...))*(I<v))+...);
-                );
-                size_t res = 0;
-                for (size_t j = 0; j < static_cast<size_t>(tools::pack_elem<v>(order...)); j++){
-                    size_t remaining = total_order - truncated_total - j;
-                    if (remaining > 0 && Nvars - v - 1 > 0) {
-                        res += tools::comb(Nvars - v - 1 + remaining - 1, remaining);
-                    } else if (remaining == 0) {
-                        res += 1;
-                    }
-                }
-                return res;
-            }()+...);
-        );
-
-        size_t total_for_order = tools::multiset_coef(Nvars, total_order);
-        return total_for_order - colex_offset - 1;
-    }
-
-    /**
-     * @brief Computes the global offset (start index) for derivatives of a given order.
-     *
-     * Derivatives are stored in graded order: all 0th-order (value), then all
-     * 1st-order, then all 2nd-order, etc. This returns the starting index.
-     *
-     * @param order The derivative order
-     * @return Starting index in the data array for derivatives of this order
-     */
-    XDIFF_INLINE_HOST_DEVICE
-    static constexpr size_t global_offset(size_t order){
-        if (std::is_constant_evaluated()) {
-            if (order > NORDER) {
-                throw "order > NORDER in constexpr evaluation";
-            }
-        } else {
-            assert(order <= NORDER && "Requested order is > NORDER");
-        }
-        return order == 0 ? 0 : tools::comb(Nvars + order - 1, order - 1);
-    }
-
-    /**
-     * @brief Computes the array offset for a specific derivative.
-     *
-     * @tparam IntType Unsigned integral types
-     * @param order Per-variable derivative counts
-     * @return Index into the data array
-     */
-    template<std::unsigned_integral... IntType>
-    XDIFF_INLINE_HOST_DEVICE static constexpr size_t offset(IntType... order){
-        return global_offset((static_cast<size_t>(order)+...)) + local_offset(order...);
-    }
-
-    /// @brief Computes array offset from a diff_count array.
-    XDIFF_INLINE_HOST_DEVICE
-    static constexpr size_t offset(const std::array<size_t, Nvars>& diff_count){
-        return XDIFF_EXPAND(Nvars, I,
-            return global_offset((diff_count[I]+...)) + local_offset(diff_count[I]...);
-        );
-    }
-
-    /**
-     * @brief Converts variable indices to per-variable derivative counts.
-     *
-     * Given a list of variable indices, counts how many times each variable
-     * appears (i.e., the order of differentiation with respect to each).
-     *
-     * @tparam Var Axis types (Symbol or integral)
-     * @param x Variable indices
-     * @return Array with count of each variable
-     *
-     * @example
-     *     diff_count(0, 1, 0);  // Returns {2, 1, 0, ...} for d²f/dx²dy
-     */
-    template<xdiff::traits::isAxis... Var>
-    XDIFF_INLINE_HOST_DEVICE
-    static constexpr std::array<size_t, Nvars> diff_count(Var... x){
-        return XDIFF_EXPAND(Nvars, I,
-            return std::array<size_t, Nvars>{tools::var_count(I, x...)...};
-        );
-    }
-};
-
-namespace detail{
-
-// Defined further below, after the Dual class. Declared here so that Dual can grant them raw access to its storage.
-template<typename STRUCT> struct HelperBaseOperandEvaluator;
-template<typename STRUCT> struct BaseOperandEvaluator;
-template<typename STRUCT> struct OperandEvaluator;
-
-} // namespace detail
-
 
 template<typename T, size_t NVARS, size_t NORDER>
 requires (NVARS > 0)
@@ -165,24 +29,14 @@ public:
     static constexpr size_t Norder = NORDER;   ///< Maximum derivative order
     static constexpr size_t REDUCED_ORDER = NORDER > 0 ? NORDER-1 : 0;
 
-    template<typename U, size_t M, size_t P, Layout LY>
-    friend class Dual;   // every Dual is a friend
-
     /// Type after DiffCount differentiations
     template<size_t DiffCount>
     using Reduced = Dual<T, NVARS, (NORDER > DiffCount ? NORDER-DiffCount : 0), Layout::Flat>;
 
-    /// Type after one differentiation
     using ReducedType = Dual<T, NVARS, REDUCED_ORDER, Layout::Flat>;
+    using DataType = std::array<T, MultiDiff<NVARS, NORDER>::Ntot>; // internal storage
 
-    /// Internal storage type
-    using DataType = std::array<T, MultiDiff<NVARS, NORDER>::Ntot>;
-
-    /// Array type for storing offsets after DiffCount differentiations
-    template<size_t DiffCount>
-    using ReducedArray = std::array<size_t, MultiDiff<NVARS, (NORDER > DiffCount ? NORDER-DiffCount : 0)>::Ntot>;
-
-    // Default rule of five
+    // =========== Rule of 5 ===========
     XDIFF_INLINE_HOST_DEVICE
     Dual() = default;
     XDIFF_INLINE_HOST_DEVICE
@@ -193,29 +47,35 @@ public:
     Dual& operator=(const Dual&) = default;
     XDIFF_INLINE_HOST_DEVICE
     Dual& operator=(Dual&&) = default;
+    XDIFF_INLINE_HOST_DEVICE
     ~Dual() = default;
 
-    template<typename U>
-    requires (!std::is_same_v<std::decay_t<U>, Dual>)
+    // =========== Main constructor ===========
+    template<detail::isScalarOperand<T> U>
     XDIFF_INLINE_HOST_DEVICE
     explicit Dual(U&& value, MakeDual md = {.axis = -1, .nvars=NVARS, .order=NORDER}) : data_{} {
         data_[0] = std::forward<U>(value);
         assert((md.nvars == NVARS || md.nvars == 0) && "nvars must match NVARS for compile-time known number of variables in Dual");
         assert((md.order == NORDER || md.order == 0) && "order must match NORDER for compile-time known order in Dual");
         assert(md.axis < int(NVARS) && "Axis index must be within the number of derivatives");
-        if (md.axis >= 0) {
-            data_[1 + md.axis] = 1;
+        assert((NORDER > 0 || md.axis < 0) && "A Dual of order zero has no derivative to seed");
+        if constexpr (NORDER > 0) {
+            if (md.axis >= 0) {
+                data_[1 + md.axis] = 1;
+            }
         }
     }
 
-    template<typename U>
+    // =========== Assignment from scalar ===========
+    template<detail::isScalarOperand<T> U>
     XDIFF_INLINE_HOST_DEVICE
-    Dual& operator=(U&& other) requires (!std::is_same_v<std::decay_t<U>, Dual> && detail::isScalarOperand<U, T>) {
+    Dual& operator=(U&& other){
         std::fill(data_.begin(), data_.end(), 0);
         data_[0] = std::forward<U>(other);
         return *this;
     }
 
+    // =========== Assignment from Seed ===========
     /**
      * @brief Assigns the seed variable a Seed stands for.
      *
@@ -234,7 +94,7 @@ public:
         return *this;
     }
 
-    operator T() const = delete; // Disable implicit conversion to T to avoid accidental loss of derivative information.
+    // =========== Accessors ===========
 
     XDIFF_INLINE_HOST_DEVICE
     constexpr const T& value() const {
@@ -252,13 +112,6 @@ public:
         return NORDER;
     }
 
-    // Modifies the value without touching any derivatives
-    XDIFF_INLINE_HOST_DEVICE
-    Dual& insert_value(const T& value) {
-        data_[0] = value;
-        return *this;
-    }
-
 
     /**
      * @brief Returns a reduced-order Dual truncated to NORDER-1.
@@ -266,13 +119,9 @@ public:
      */
     XDIFF_INLINE_HOST_DEVICE
     ReducedType trimmed() const {
-        if constexpr (NORDER>0){
-            ReducedType out;
-            std::copy(data_.data(), data_.data() + ReducedType::Ntot, out.data_.data());
-            return out;
-        } else{
-            return ReducedType(this->value());
-        }
+        ReducedType out;
+        std::copy(data_.data(), data_.data() + ReducedType::Ntot, out.data_.data());
+        return out;
     }
 
     /**
@@ -287,15 +136,15 @@ public:
      *
      * @example
      *     Dual<double, 3, 3> f = ...;
-     *     auto df_dx = f.trimmed_diff_wrt(Symbol<0>{});      // df/dx and its derivatives
-     *     auto d2f_dxdy = f.trimmed_diff_wrt(Symbol<0>{}, Symbol<1>{});  // d²f/dxdy
+     *     auto df_dx = f.trimmed_diff_wrt(0);      // df/dx and its derivatives
+     *     auto d2f_dxdy = f.trimmed_diff_wrt(0, 1);  // d²f/dxdy
      */
     template<size_t... I>
     XDIFF_MAYBE_INLINE
-    auto constexpr trimmed_diff_wrt(Symbol<I>... x) const{
-        static_assert(sizeof...(x)<=NORDER, "Number of differentiations requested must be <= NORDER");
+    auto constexpr trimmed_diff_wrt() const{
+        static_assert(sizeof...(I)<=NORDER, "Number of differentiations requested must be <= NORDER");
         using ResType = typename Dual::Reduced<sizeof...(I)>;
-        auto constexpr OFFSETS = offsets_for_reduced_diff(x...);
+        auto constexpr OFFSETS = offsets_for_reduced_diff(I...);
         ResType res;
 
         for (size_t i=0; i<ResType::Ntot; i++){
@@ -307,13 +156,12 @@ public:
     /**
      * @brief Extracts a partial derivative as a new reduced-order Dual (runtime or mixed).
      *
-     * @tparam IntType Axis index types (Symbol or integral)
      * @param x Variables to differentiate with respect to
      * @return A Dual representing the derivative and its higher derivatives
      */
-    template<xdiff::traits::isAxis... IntType>
+    template<std::integral... Int>
     XDIFF_MAYBE_INLINE
-    auto constexpr trimmed_diff_wrt(IntType... x) const{
+    auto constexpr trimmed_diff_wrt(Int... x) const{
         static_assert(sizeof...(x)<=NORDER, "Number of differentiations requested must be <= NORDER");
         using ResType = typename Dual::Reduced<sizeof...(x)>;
         auto offsets = offsets_for_reduced_diff(x...);
@@ -331,12 +179,12 @@ public:
      * (padded with zeros for unavailable higher derivatives).
      *
      * @tparam IntType Axis index types
-     * @param x Variables to differentiate with respect to
+     * @param x Variables to differentiate with respect to (integral indices)
      * @return A Dual of the same order containing the derivative
      */
-    template<xdiff::traits::isAxis... IntType>
+    template<std::integral... Int>
     XDIFF_INLINE_HOST_DEVICE
-    Dual diff_wrt(IntType... x) const{
+    Dual diff_wrt(Int... x) const{
         auto f = this->trimmed_diff_wrt(x...);
         Dual res{};
         std::copy(f.data_.data(), f.data_.data() + f.Ntot, res.data_.data());
@@ -346,19 +194,19 @@ public:
     /**
      * @brief Returns the scalar value of a specific partial derivative.
      *
-     * @tparam IntType Axis index types
+     * @tparam Int Integral index types
      * @param x Variables to differentiate with respect to
      * @return The derivative value as a scalar
      *
      * @example
-     *     Dual<double, 2, 2> f = ...;
+     *     Dual<double, 2, 2, Layout::Flat> f = ...;
      *     f.get_diff_wrt(0);        // df/dx
      *     f.get_diff_wrt(0, 1);     // d²f/dxdy
-     *     f.get_diff_wrt(Symbol<0>{}, Symbol<0>{});  // d²f/dx²
+     *     f.get_diff_wrt(0, 0);  // d²f/dx²
      */
-    template<xdiff::traits::isAxis... IntType>
+    template<std::integral... Int>
     XDIFF_INLINE_HOST_DEVICE
-    constexpr const T& get_diff_wrt(IntType... x) const{
+    constexpr const T& get_diff_wrt(Int... x) const{
         static_assert(sizeof...(x)<=NORDER, "Number of differentiations requested must be <= NORDER");
         auto nx = MDBase::diff_count(x...);
         return data_[MDBase::offset(nx)];
@@ -385,15 +233,15 @@ public:
     /**
      * @brief Retrieves derivative value by per-variable counts.
      *
-     * @tparam IntType Integral types
+     * @tparam Int Integral types
      * @param order_wrt Derivative count for each variable
      * @return The derivative value
      *
      * @example
      *     f.value_of_diff_counts(2, 1, 0);  // d³f/dx²dy
      */
-    template<std::integral... IntType>
-    XDIFF_INLINE_HOST_DEVICE T value_of_diff_counts(IntType... order_wrt)const{
+    template<std::integral... Int>
+    XDIFF_INLINE_HOST_DEVICE T value_of_diff_counts(Int... order_wrt)const{
         return data_[MDBase::offset(order_wrt...)];
     }
 
@@ -406,10 +254,10 @@ public:
      * @param x Variables to differentiate with respect to
      * @return Array of offsets for extracting the reduced derivative
      */
-    template<xdiff::traits::isAxis... IntType>
-    requires (sizeof...(IntType)<=NORDER)
+    template<std::integral... Int>
+    requires (sizeof...(Int)<=NORDER)
     XDIFF_MAYBE_INLINE
-    static constexpr ReducedArray<sizeof...(IntType)> offsets_for_reduced_diff(IntType... x){
+    static constexpr auto offsets_for_reduced_diff(Int... x){
         constexpr size_t NEW_ORDER = NORDER-static_cast<size_t>(sizeof...(x));
 
         std::array<size_t, Dual<T, NVARS, NEW_ORDER, Layout::Flat>::Ntot> res{};
@@ -420,7 +268,7 @@ public:
         auto call_it = [&] XDIFF_DEVICE <size_t... I>(std::integer_sequence<size_t, I...>) XDIFF_ALWAYS_INLINE {
             [&] XDIFF_DEVICE <size_t... Ord>(std::index_sequence<Ord...>) XDIFF_ALWAYS_INLINE {
                 ([&] XDIFF_DEVICE <size_t OrdI>() XDIFF_ALWAYS_INLINE {
-                    using IterType = tools::MultiSetIterator<OrdI+sizeof...(x), Nvars, true>;
+                    using IterType = tools::MultiSetIterator<OrdI+sizeof...(x), NVARS, true>;
                     IterType::apply_iter_on(
                         [&] XDIFF_DEVICE (const IterType::SetType&, const IterType::CounterType& order_of_var) XDIFF_ALWAYS_INLINE {
                             if ((((order_of_var[I] >= nx[I])) &&...)){
@@ -432,7 +280,7 @@ public:
             }(std::make_index_sequence<NEW_ORDER+1UL>{});
         };
 
-        call_it(std::make_index_sequence<Nvars>{});
+        call_it(std::make_index_sequence<NVARS>{});
         return res;
     }
 
@@ -443,6 +291,7 @@ public:
         std::forward<Action>(action)();
     }
 
+    operator T() const = delete; // Disable implicit conversion to T to avoid accidental loss of derivative information.
 
 protected:
 
@@ -500,6 +349,9 @@ protected:
 
 
 private:
+
+    template<typename U, size_t M, size_t P, Layout LY>
+    friend class Dual;   // every Dual is a friend
 
     DataType data_;
 
@@ -622,7 +474,7 @@ struct HelperBaseOperandEvaluator{
         template<size_t I>
         XDIFF_INLINE_DEVICE
         static auto reduced_diff(const AD& f){
-            return f.trimmed_diff_wrt(Symbol<I>());
+            return f.template trimmed_diff_wrt<I>();
         }
 
         /// @brief Gets the reduced derivative w.r.t. variable I from a Seed. A seed variable

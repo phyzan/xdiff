@@ -63,15 +63,6 @@ concept isScalarOperand = std::is_convertible_v<std::decay_t<F>, T>;
 template<typename F, typename DF>
 struct DiffPair;
 
-template<size_t Axis>
-struct Symbol{
-    static constexpr char AXIS = Axis;
-
-    /// @brief Implicit conversion to size_t for use in derivative indexing.
-    constexpr operator size_t(){
-        return Axis;
-    }
-};
 
 struct ZeroValue{};
 
@@ -80,12 +71,6 @@ namespace traits{
 
 template<typename F>
 concept isAnyZero = std::is_base_of_v<ZeroValue, std::decay_t<F>>;
-
-template<typename F>
-concept isSymbol = requires {F::AXIS;} && std::is_same_v<Symbol<F::AXIS>, F>;
-
-template<typename F>
-concept isAxis = ((isSymbol<F> || std::is_integral_v<F>));
 
 } // namespace xdiff::traits
 
@@ -131,7 +116,7 @@ public:
         return XDIFF_THIS->value();
     }
 
-    template<xdiff::traits::isAxis... Int>
+    template<std::integral... Int>
     XDIFF_INLINE_HOST_DEVICE
     constexpr const T& get_diff_wrt(Int... x) const{
         return XDIFF_THIS->get_diff_wrt(x...);

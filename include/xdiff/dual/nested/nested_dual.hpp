@@ -1,102 +1,10 @@
-#ifndef XDIFF_DUAL_NESTED_HPP
-#define XDIFF_DUAL_NESTED_HPP
+#ifndef XDIFF_DUAL_NESTED_DUAL_HPP
+#define XDIFF_DUAL_NESTED_DUAL_HPP
 
 
-#include "../dual.hpp"
-#include <lazy/lazy.hpp>
+#include "nested_helpers.hpp"
 
 namespace xdiff::detail{
-
-
-template<typename T, typename G, size_t NVARS, typename Derived>
-class RecursiveDual;
-
-// Helper struct to extract the dual type (or scalar type) that a recursive dual contains
-template<typename U>
-struct DualInspector {
-    static_assert(!std::is_same_v<U, void>, "Invalid type in DualInspector.");
-    using type = U;
-};
-
-template<typename T, size_t NVARS, size_t NORDER>
-struct DualInspector<Dual<T, NVARS, NORDER, Layout::Nested>> {
-    using type = Dual<T, NVARS, NORDER, Layout::Nested>;
-};
-
-template<typename T, size_t NVARS, size_t NORDER>
-struct DualInspector<lazy::LazyType<Dual<T, NVARS, NORDER, Layout::Nested>>> {
-    using type = Dual<T, NVARS, NORDER, Layout::Nested>;
-};
-
-// Helper to determine the base RecursiveDual for the Dual class
-template<typename Derived, typename T, size_t NVARS, size_t NORDER>
-struct RecursiveBaseHelper {
-#ifdef XDIFF_LAZY_NESTED_DUAL
-    using GradType = std::conditional_t<
-        NVARS == 0,
-        lazy::LazyType<Dual<T, NVARS, NORDER - 1, Layout::Nested>>,
-        Dual<T, NVARS, NORDER - 1, Layout::Nested>
-    >;
-#else
-    using GradType = Dual<T, NVARS, NORDER - 1, Layout::Nested>;
-#endif
-    using type = RecursiveDual<T, GradType, NVARS, Derived>;
-};
-
-template<typename Derived, typename T, size_t NVARS>
-struct RecursiveBaseHelper<Derived, T, NVARS, 1> {
-    using type = RecursiveDual<T, T, NVARS, Derived>;
-};
-
-template<typename Derived, typename T, size_t NVARS, size_t NORDER>
-using GetRecursiveBase = typename RecursiveBaseHelper<Derived, T, NVARS, NORDER>::type;
-
-
-// Defined in operator_template.hpp, which is included at the end of this header. Declared here so that Dual can grant them raw access to its storage.
-
-// Dual -> Dual
-template<template<typename> typename RuleStruct, typename T, size_t NVARS, size_t NORDER>
-Dual<T, NVARS, NORDER, Layout::Nested>& unary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out, const Dual<T, NVARS, NORDER, Layout::Nested>& arg);
-
-// Seed -> Dual
-template<template<typename> typename RuleStruct, typename T, size_t NVARS, size_t NORDER>
-Dual<T, NVARS, NORDER, Layout::Nested>& unary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out, const Seed<T, NVARS, NORDER, Layout::Nested>& arg);
-
-// (Dual, Dual) -> Dual (binary operations)
-template<template<typename> typename RuleStruct, typename T, size_t NVARS, size_t NORDER>
-Dual<T, NVARS, NORDER, Layout::Nested>& binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out, const Dual<T, NVARS, NORDER, Layout::Nested>& a, const Dual<T, NVARS, NORDER, Layout::Nested>& b);
-
-// (Dual, Seed) -> Dual (binary operations)
-template<template<typename> typename RuleStruct, typename T, size_t NVARS, size_t NORDER>
-Dual<T, NVARS, NORDER, Layout::Nested>& binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out, const Dual<T, NVARS, NORDER, Layout::Nested>& a, const Seed<T, NVARS, NORDER, Layout::Nested>& b);
-
-// (Seed, Dual) -> Dual (binary operations)
-template<template<typename> typename RuleStruct, typename T, size_t NVARS, size_t NORDER>
-Dual<T, NVARS, NORDER, Layout::Nested>& binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out, const Seed<T, NVARS, NORDER, Layout::Nested>& a, const Dual<T, NVARS, NORDER, Layout::Nested>& b);
-
-// (Seed, Seed) -> Dual (binary operations)
-template<template<typename> typename RuleStruct, typename T, size_t NVARS, size_t NORDER>
-Dual<T, NVARS, NORDER, Layout::Nested>& binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out, const Seed<T, NVARS, NORDER, Layout::Nested>& a, const Seed<T, NVARS, NORDER, Layout::Nested>& b);
-
-// (F, Dual) -> Dual (binary operations)
-template<template<typename> typename RuleStruct, typename F, typename T, size_t NVARS, size_t NORDER>
-requires (isScalarOperand<F, T>)
-Dual<T, NVARS, NORDER, Layout::Nested>& binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out, const F& a, const Dual<T, NVARS, NORDER, Layout::Nested>& b);
-
-// (Dual, F) -> Dual (binary operations)
-template<template<typename> typename RuleStruct, typename F, typename T, size_t NVARS, size_t NORDER>
-requires (isScalarOperand<F, T>)
-Dual<T, NVARS, NORDER, Layout::Nested>& binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out, const Dual<T, NVARS, NORDER, Layout::Nested>& a, const F& b);
-
-// (F, Seed) -> Dual (binary operations)
-template<template<typename> typename RuleStruct, typename F, typename T, size_t NVARS, size_t NORDER>
-requires (isScalarOperand<F, T>)
-Dual<T, NVARS, NORDER, Layout::Nested>& binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out, const F& a, const Seed<T, NVARS, NORDER, Layout::Nested>& b);
-
-// (Seed, F) -> Dual (binary operations)
-template<template<typename> typename RuleStruct, typename F, typename T, size_t NVARS, size_t NORDER>
-requires (isScalarOperand<F, T>)
-Dual<T, NVARS, NORDER, Layout::Nested>& binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out, const Seed<T, NVARS, NORDER, Layout::Nested>& a, const F& b);
 
 
 // Struct holding the default number of variables for recursive dual numbers, with thread-local storage.
@@ -123,6 +31,7 @@ public:
     RecursiveDualBase& operator=(const RecursiveDualBase& other) = default;
     XDIFF_INLINE_HOST_DEVICE
     RecursiveDualBase& operator=(RecursiveDualBase&& other) noexcept = default;
+    ~RecursiveDualBase() = default;
 
     template<typename U>
     XDIFF_INLINE_HOST_DEVICE
@@ -130,8 +39,6 @@ public:
         this->true_value = std::forward<U>(other);
         return *this;
     }
-    
-    ~RecursiveDualBase() = default;
 
     constexpr const T& value() const {
         if constexpr (std::is_same_v<T, G>){
@@ -155,17 +62,6 @@ public:
     XDIFF_INLINE_HOST_DEVICE
     constexpr size_t nvars() const{
         return XDIFF_THIS->nvars();
-    }
-
-    // Modifies the value without touching any derivatives
-    XDIFF_INLINE_HOST_DEVICE
-    Derived& insert_value(const T& value) {
-        if constexpr (std::is_same_v<T, G>){
-            this->true_value = value;
-        } else {
-            this->true_value.insert_value(value);
-        }
-        return *XDIFF_THIS;
     }
 
 protected:
@@ -309,6 +205,7 @@ public:
 
     template<typename U>
     explicit RecursiveDual(U&& value, MakeDual md) requires (!std::is_same_v<T, G>) : Base(std::forward<U>(value), md), diffs_(nv(md.nvars), MakeDual{.axis = -1, .nvars = md.nvars, .order = md.order}) {
+        assert(md.axis < int(diffs_.size()) && "Axis index must be within the number of derivatives");
         if (md.axis >= 0) {
             diffs_[md.axis] = 1;
         }
@@ -316,6 +213,7 @@ public:
 
     template<typename U>
     explicit RecursiveDual(U&& value, MakeDual md) requires (std::is_same_v<T, G>) : Base(std::forward<U>(value), md), diffs_(nv(md.nvars), 0) {
+        assert(md.axis < int(diffs_.size()) && "Axis index must be within the number of derivatives");
         if (md.axis >= 0) {
             diffs_[md.axis] = 1; // Set the derivative for the specified axis to 1
         }
@@ -459,21 +357,21 @@ public:
         return NORDER;
     }
 
-    template<xdiff::traits::isAxis... Int>
+    template<std::integral... Int>
     XDIFF_INLINE_HOST_DEVICE
     constexpr const T& get_diff_wrt(Int... x) const{
         static_assert(sizeof...(x)<=NORDER, "Number of differentiations requested must be <= NORDER");
         return diff_accessor(*this, x...);
     }
 
-    template<xdiff::traits::isAxis... Int>
+    template<std::integral... Int>
     requires (NORDER > 1)
     XDIFF_INLINE_HOST_DEVICE
     Dual<T, NVARS, NORDER-1, Layout::Nested> trimmed() const{
         return this->true_value;
     }
 
-    template<xdiff::traits::isAxis... IntType>
+    template<std::integral... IntType>
     XDIFF_INLINE_HOST_DEVICE
     auto constexpr trimmed_diff_wrt(IntType... x) const{
         // Returning `auto` and not `const auto&` for compatibility with Dual<Layout=Flat>
@@ -592,7 +490,7 @@ private:
     requires (detail::isScalarOperand<F2, T2>)
     friend Dual<T2, N2, O2, Layout::Nested>& assign_compound_div(Dual<T2, N2, O2, Layout::Nested>& out, const F2& arg);
 
-    template<size_t NORD, xdiff::traits::isAxis First,xdiff::traits::isAxis... Int>
+    template<size_t NORD, std::integral First, std::integral... Int>
     XDIFF_INLINE_HOST_DEVICE
     static constexpr const T& diff_accessor(const Dual<T, NVARS, NORD, Layout::Nested>& dual, First x0, Int... x) {
         static_assert(sizeof...(x) < NORD, "Number of differentiations requested must be < NORDER");
@@ -603,7 +501,7 @@ private:
         }
     }
 
-    template<xdiff::traits::isAxis First, xdiff::traits::isAxis... IntType>
+    template<std::integral First, std::integral... IntType>
     XDIFF_INLINE_HOST_DEVICE
     constexpr const auto& trimmed_diff_wrt_helper(First x0, IntType... x) const{
         if constexpr (sizeof...(x) == 0){
@@ -639,4 +537,4 @@ private:
 #include "nested_dual_operators.hpp" // IWYU pragma: keep
 
 
-#endif // XDIFF_DUAL_NESTED_HPP
+#endif // XDIFF_DUAL_NESTED_DUAL_HPP
