@@ -127,12 +127,13 @@ public:
     using iterator = SeedVector;
     using const_iterator = SeedVector;
 
-    // The "nvars" and "order" arguments follow the MakeDual convention: the zero value selects the
-    // compile-time NVARS / NORDER, or the default runtime number of variables when NVARS is zero.
+    // "nvars" and "order" default to the compile-time NVARS / NORDER, and must match them wherever
+    // they are known. Only a runtime number of variables (NVARS == 0) carries a value of its own,
+    // and there the zero default selects the Dual's default number of variables.
+    // "nvars" is validated by nv(), the one place that interprets it.
     XDIFF_INLINE_HOST_DEVICE
     SeedVector(const T* seed, size_t nvars = NVARS, size_t order = NORDER) : seed_(seed), size_(nv(nvars)) {
-        assert((order == NORDER || NORDER == 0) && "order must match NORDER for a compile-time known order in SeedVector");
-        assert((nvars == NVARS || NVARS == 0) && "nvars must match NVARS for a compile-time known number of variables in SeedVector");
+        assert(order == NORDER && "order must match NORDER for a compile-time known order in SeedVector");
         (void)order;
     }
 
@@ -275,7 +276,8 @@ private:
     XDIFF_INLINE_HOST_DEVICE
     static size_t nv(size_t nvars){
         if constexpr (NVARS > 0){
-            assert((nvars == NVARS || nvars == 0) && "nvars must match NVARS for a compile-time known number of variables in SeedVector");
+            assert(nvars == NVARS && "nvars must match NVARS for a compile-time known number of variables in SeedVector");
+            (void)nvars;
             return NVARS;
         } else {
             return nvars > 0 ? nvars : Dual<T, NVARS, NORDER, LY>::get_default_nvars();
