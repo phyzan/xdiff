@@ -38,11 +38,7 @@ public:
     using DualType = Dual<T, NVARS, NORDER, LY>;
 
     /// Type after one differentiation: one order lower, or a plain scalar once no order is left.
-    using TrimmedType = std::conditional_t<
-        (NORDER > 1),
-        Seed<T, NVARS, (NORDER > 1 ? NORDER-1 : 1), LY>,
-        T
-    >;
+    using TrimmedType = std::conditional_t<(NORDER > 1), Seed<T, NVARS, NORDER-1, LY>, T>;
 
     XDIFF_INLINE_HOST_DEVICE
     Seed(T value, size_t axis, size_t nvars) : value_(std::move(value)), axis_(axis), nvars_(nvars) {
@@ -66,11 +62,11 @@ public:
      * @return A Seed of order NORDER-1, or the scalar value when no order is left.
      */
     XDIFF_INLINE_HOST_DEVICE
-    TrimmedType trimmed() const{
+    decltype(auto) trimmed() const{
         if constexpr (NORDER > 1){
             return TrimmedType{value_, axis_, nvars()};
         } else {
-            return value_;
+            return (value_);
         }
     }
 
