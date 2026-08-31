@@ -11,19 +11,50 @@
 namespace xdiff::detail {
 
 
+// Resizes 'out' so that it can hold the result of an operation on an operand that has "nvars"
+// variables. Only a runtime number of variables can ever be mismatched.
+template<typename T, size_t NVARS, size_t NORDER>
+XDIFF_INLINE_HOST_DEVICE
+void format_nested(Dual<T, NVARS, NORDER, Layout::Nested>& out, size_t nvars) {
+
+    if constexpr (NVARS == 0) {
+        if (out.nvars() != nvars) {
+            out.set_nvars(nvars);
+        }
+    } else {
+        assert(out.nvars() == nvars && "All RecursiveDuals must have the same number of derivatives");
+        (void)nvars;
+    }
+
+    // TODO : When runtime order is needed, handle it here.
+}
+
+template<typename T, size_t NVARS, size_t NORDER>
+XDIFF_INLINE_HOST_DEVICE
+void format_nested(Dual<T, NVARS, NORDER, Layout::Nested>& out,
+                   const Dual<T, NVARS, NORDER, Layout::Nested>& src) {
+    format_nested(out, src.nvars());
+}
+
+template<typename T, size_t NVARS, size_t NORDER>
+XDIFF_INLINE_HOST_DEVICE
+void format_nested(Dual<T, NVARS, NORDER, Layout::Nested>& out,
+                   const Seed<T, NVARS, NORDER, Layout::Nested>& src) {
+    format_nested(out, src.nvars());
+}
+
+
 // ------------------------------ Unary operation implementation ------------------------------
+
+// f(out, Dual)
 template<template<typename> typename RuleStruct, typename T, size_t NVARS, size_t NORDER>
 XDIFF_INLINE_HOST_DEVICE
-Dual<T, NVARS, NORDER, Layout::Nested>& 
-unary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out, 
+Dual<T, NVARS, NORDER, Layout::Nested>&
+unary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out,
                   const Dual<T, NVARS, NORDER, Layout::Nested>& arg) {
-    if constexpr (NVARS == 0) {
-        if (out.nvars() != arg.nvars()) {
-            out.set_nvars(arg.nvars());
-        }
-    }
+    format_nested(out, arg);
     using G = typename Dual<T, NVARS, NORDER, Layout::Nested>::grad_type;
-    using DP = xdiff::DiffPair<const G&, const G&>;
+    using DP = DiffPair<const G&, const G&>;
 
     for (size_t i = 0; i < arg.nvars(); i++){
         out[i] = RuleStruct<T>::diff_rule(DP{arg.true_value, arg[i]});
@@ -32,16 +63,49 @@ unary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out,
     return out;
 }
 
+// f(out, Seed)
+template<template<typename> typename RuleStruct, typename T, size_t NVARS, size_t NORDER>
+XDIFF_INLINE_HOST_DEVICE
+Dual<T, NVARS, NORDER, Layout::Nested>&
+unary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out,
+                  const Seed<T, NVARS, NORDER, Layout::Nested>& arg) {
+    format_nested(out, arg);
+
+    // A seed variable differentiates to the constant 1 along its own axis, and to 0 along every
+    // other one. The vanishing gradient is passed as a ZeroValue so that the rule can drop the
+    // term at compile time, exactly as it does for a scalar operand.
+    for (size_t i = 0; i < arg.nvars(); i++){
+        if (i == arg.axis()){
+            out[i] = RuleStruct<T>::diff_rule(DiffPair{arg.trimmed(), 1});
+        } else {
+            out[i] = RuleStruct<T>::diff_rule(DiffPair{arg.trimmed(), ZeroValue{}});
+        }
+    }
+
+    out.true_value = RuleStruct<T>::operation(arg.trimmed());
+
+    return out;
+}
+
+// f(Dual) -> Dual (unary operation)
 template<template<typename> typename RuleStruct, typename T, size_t NVARS, size_t NORDER>
 XDIFF_INLINE_HOST_DEVICE
 Dual<T, NVARS, NORDER, Layout::Nested> 
 unary_op_impl(const Dual<T, NVARS, NORDER, Layout::Nested>& arg) {
-    Dual<T, NVARS, NORDER, Layout::Nested> out(MakeDual{.nvars = arg.nvars()});
+    Dual<T, NVARS, NORDER, Layout::Nested> out(MakeDual{.nvars = arg.nvars(), .order = arg.order()});
     unary_assign_impl<RuleStruct>(out, arg);
     return out;
 }
 
-
+// f(Seed) -> Dual (unary operation)
+template<template<typename> typename RuleStruct, typename T, size_t NVARS, size_t NORDER>
+XDIFF_INLINE_HOST_DEVICE
+Dual<T, NVARS, NORDER, Layout::Nested> 
+unary_op_impl(const Seed<T, NVARS, NORDER, Layout::Nested>& arg) {
+    Dual<T, NVARS, NORDER, Layout::Nested> out(MakeDual{.nvars = arg.nvars(), .order = arg.order()});
+    unary_assign_impl<RuleStruct>(out, arg);
+    return out;
+}
 
 
 
@@ -56,13 +120,9 @@ binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out,
                    const Dual<T, NVARS, NORDER, Layout::Nested>& a,
                    const Dual<T, NVARS, NORDER, Layout::Nested>& b) {
     XDIFF_ASSERT_REC_DUAL_BINARY_OPERATION(a, b);
-    if constexpr (NVARS == 0) {
-        if (out.nvars() != a.nvars()) {
-            out.set_nvars(a.nvars());
-        }
-    }
+    format_nested(out, a);
     using G = typename Dual<T, NVARS, NORDER, Layout::Nested>::grad_type;
-    using DP = xdiff::DiffPair<const G&, const G&>;
+    using DP = DiffPair<const G&, const G&>;
 
     for (size_t i = 0; i < a.nvars(); i++){
         out[i] = RuleStruct<T>::diff_rule(DP{a.true_value, a[i]}, DP{b.true_value, b[i]});
@@ -71,21 +131,95 @@ binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out,
     return out;
 }
 
+// Binary: (Seed, Dual)
+template<template<typename> typename RuleStruct, typename T, size_t NVARS, size_t NORDER>
+XDIFF_INLINE_HOST_DEVICE
+Dual<T, NVARS, NORDER, Layout::Nested>& 
+binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out,
+                   const Seed<T, NVARS, NORDER, Layout::Nested>& a,
+                   const Dual<T, NVARS, NORDER, Layout::Nested>& b) {
+    XDIFF_ASSERT_REC_DUAL_BINARY_OPERATION(a, b);
+    format_nested(out, a);
+    using G = typename Dual<T, NVARS, NORDER, Layout::Nested>::grad_type;
+    using DP = DiffPair<const G&, const G&>;
+
+    for (size_t i = 0; i < a.nvars(); i++){
+        if (i == a.axis()){
+            out[i] = RuleStruct<T>::diff_rule(DiffPair{a.trimmed(), 1}, DP{b.true_value, b[i]});
+        }else{
+            out[i] = RuleStruct<T>::diff_rule(DiffPair{a.trimmed(), ZeroValue{}}, DP{b.true_value, b[i]});
+        }
+    }
+    out.true_value = RuleStruct<T>::operation(a.trimmed(), b.true_value);
+    return out;
+}
+
+// Binary: (Seed, Seed)
+template<template<typename> typename RuleStruct, typename T, size_t NVARS, size_t NORDER>
+XDIFF_INLINE_HOST_DEVICE
+Dual<T, NVARS, NORDER, Layout::Nested>& 
+binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out,
+                   const Seed<T, NVARS, NORDER, Layout::Nested>& a,
+                   const Seed<T, NVARS, NORDER, Layout::Nested>& b) {
+    XDIFF_ASSERT_REC_DUAL_BINARY_OPERATION(a, b);
+    format_nested(out, a);
+
+    // Both operands are seeds, so along any axis but their own the gradient is exactly zero. It
+    // is passed as a ZeroValue rather than as a zero-valued scalar so that the rule drops the
+    // term at compile time instead of evaluating it, which also keeps rules whose general branch
+    // is only defined for a non-vanishing operand (such as Pow) away from an invalid argument.
+    for (size_t i = 0; i < a.nvars(); i++){
+        const bool grad_a = (i == a.axis());
+        const bool grad_b = (i == b.axis());
+        if (grad_a && grad_b){
+            out[i] = RuleStruct<T>::diff_rule(DiffPair{a.trimmed(), 1}, DiffPair{b.trimmed(), 1});
+        } else if (grad_a){
+            out[i] = RuleStruct<T>::diff_rule(DiffPair{a.trimmed(), 1}, DiffPair{b.trimmed(), ZeroValue{}});
+        } else if (grad_b){
+            out[i] = RuleStruct<T>::diff_rule(DiffPair{a.trimmed(), ZeroValue{}}, DiffPair{b.trimmed(), 1});
+        } else {
+            out[i] = RuleStruct<T>::diff_rule(DiffPair{a.trimmed(), ZeroValue{}}, DiffPair{b.trimmed(), ZeroValue{}});
+        }
+    }
+    out.true_value = RuleStruct<T>::operation(a.trimmed(), b.trimmed());
+    return out;
+}
+
+// Binary: (Dual, Seed)
+template<template<typename> typename RuleStruct, typename T, size_t NVARS, size_t NORDER>
+XDIFF_INLINE_HOST_DEVICE
+Dual<T, NVARS, NORDER, Layout::Nested>& 
+binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out,
+                   const Dual<T, NVARS, NORDER, Layout::Nested>& a,
+                   const Seed<T, NVARS, NORDER, Layout::Nested>& b) {
+    XDIFF_ASSERT_REC_DUAL_BINARY_OPERATION(a, b);
+    format_nested(out, a);
+    using G = typename Dual<T, NVARS, NORDER, Layout::Nested>::grad_type;
+    using DP = DiffPair<const G&, const G&>;
+
+    for (size_t i = 0; i < a.nvars(); i++){
+        if (i == b.axis()){
+            out[i] = RuleStruct<T>::diff_rule(DP{a.true_value, a[i]}, DiffPair{b.trimmed(), 1});
+        }else{
+            out[i] = RuleStruct<T>::diff_rule(DP{a.true_value, a[i]}, DiffPair{b.trimmed(), ZeroValue{}});
+        }
+    }
+    out.true_value = RuleStruct<T>::operation(a.true_value, b.trimmed());
+    return out;
+}
+
 // Binary: (Scalar, Dual)
 template<template<typename> typename RuleStruct, typename F, typename T, size_t NVARS, size_t NORDER>
+requires (::xdiff::detail::isScalarOperand<F, T>)
 XDIFF_INLINE_HOST_DEVICE
 Dual<T, NVARS, NORDER, Layout::Nested>& 
 binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out,
                    const F& a,
                    const Dual<T, NVARS, NORDER, Layout::Nested>& b) {
-    if constexpr (NVARS == 0) {
-        if (out.nvars() != b.nvars()) {
-            out.set_nvars(b.nvars());
-        }
-    }
+    format_nested(out, b);
     using G = typename Dual<T, NVARS, NORDER, Layout::Nested>::grad_type;
-    using DP_A = xdiff::DiffPair<const F&, const ZeroValue&>;
-    using DP_B = xdiff::DiffPair<const G&, const G&>;
+    using DP_A = DiffPair<const F&, const ZeroValue&>;
+    using DP_B = DiffPair<const G&, const G&>;
 
     for (size_t i = 0; i < b.nvars(); i++){
         out[i] = RuleStruct<T>::diff_rule(DP_A{a, ZeroValue{}}, DP_B{b.true_value, b[i]});
@@ -96,24 +230,65 @@ binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out,
 
 // Binary: (Dual, Scalar)
 template<template<typename> typename RuleStruct, typename F, typename T, size_t NVARS, size_t NORDER>
+requires (::xdiff::detail::isScalarOperand<F, T>)
 XDIFF_INLINE_HOST_DEVICE
 Dual<T, NVARS, NORDER, Layout::Nested>& 
 binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out,
                    const Dual<T, NVARS, NORDER, Layout::Nested>& a,
                    const F& b) {
-    if constexpr (NVARS == 0) {
-        if (out.nvars() != a.nvars()) {
-            out.set_nvars(a.nvars());
-        }
-    }
+    format_nested(out, a);
     using G = typename Dual<T, NVARS, NORDER, Layout::Nested>::grad_type;
-    using DP_A = xdiff::DiffPair<const G&, const G&>;
-    using DP_B = xdiff::DiffPair<const F&, const ZeroValue&>;
+    using DP_A = DiffPair<const G&, const G&>;
+    using DP_B = DiffPair<const F&, const ZeroValue&>;
 
     for (size_t i = 0; i < a.nvars(); i++){
         out[i] = RuleStruct<T>::diff_rule(DP_A{a.true_value, a[i]}, DP_B{b, ZeroValue{}});
     }
     out.true_value = RuleStruct<T>::operation(a.true_value, b);
+    return out;
+}
+
+// Binary: (Scalar, Seed)
+template<template<typename> typename RuleStruct, typename F, typename T, size_t NVARS, size_t NORDER>
+requires (::xdiff::detail::isScalarOperand<F, T>)
+XDIFF_INLINE_HOST_DEVICE
+Dual<T, NVARS, NORDER, Layout::Nested>&
+binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out,
+                   const F& a,
+                   const Seed<T, NVARS, NORDER, Layout::Nested>& b) {
+    format_nested(out, b);
+    using DP_A = DiffPair<const F&, const ZeroValue&>;
+
+    for (size_t i = 0; i < b.nvars(); i++){
+        if (i == b.axis()){
+            out[i] = RuleStruct<T>::diff_rule(DP_A{a, ZeroValue{}}, DiffPair{b.trimmed(), 1});
+        }else{
+            out[i] = RuleStruct<T>::diff_rule(DP_A{a, ZeroValue{}}, DiffPair{b.trimmed(), ZeroValue{}});
+        }
+    }
+    out.true_value = RuleStruct<T>::operation(a, b.trimmed());
+    return out;
+}
+
+// Binary: (Seed, Scalar)
+template<template<typename> typename RuleStruct, typename F, typename T, size_t NVARS, size_t NORDER>
+requires (::xdiff::detail::isScalarOperand<F, T>)
+XDIFF_INLINE_HOST_DEVICE
+Dual<T, NVARS, NORDER, Layout::Nested>&
+binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out,
+                   const Seed<T, NVARS, NORDER, Layout::Nested>& a,
+                   const F& b) {
+    format_nested(out, a);
+    using DP_B = DiffPair<const F&, const ZeroValue&>;
+
+    for (size_t i = 0; i < a.nvars(); i++){
+        if (i == a.axis()){
+            out[i] = RuleStruct<T>::diff_rule(DiffPair{a.trimmed(), 1}, DP_B{b, ZeroValue{}});
+        }else{
+            out[i] = RuleStruct<T>::diff_rule(DiffPair{a.trimmed(), ZeroValue{}}, DP_B{b, ZeroValue{}});
+        }
+    }
+    out.true_value = RuleStruct<T>::operation(a.trimmed(), b);
     return out;
 }
 
@@ -123,25 +298,77 @@ XDIFF_INLINE_HOST_DEVICE
 Dual<T, NVARS, NORDER, Layout::Nested> 
 binary_op_impl(const Dual<T, NVARS, NORDER, Layout::Nested>& a,
                const Dual<T, NVARS, NORDER, Layout::Nested>& b) {
-    Dual<T, NVARS, NORDER, Layout::Nested> out(MakeDual{.nvars = a.nvars()});
+    Dual<T, NVARS, NORDER, Layout::Nested> out(MakeDual{.nvars = a.nvars(), .order = a.order()});
+    binary_assign_impl<RuleStruct>(out, a, b);
+    return out;
+}
+
+template<template<typename> typename RuleStruct, typename T, size_t NVARS, size_t NORDER>
+XDIFF_INLINE_HOST_DEVICE
+Dual<T, NVARS, NORDER, Layout::Nested> 
+binary_op_impl(const Dual<T, NVARS, NORDER, Layout::Nested>& a,
+               const Seed<T, NVARS, NORDER, Layout::Nested>& b) {
+    Dual<T, NVARS, NORDER, Layout::Nested> out(MakeDual{.nvars = a.nvars(), .order = a.order()});
+    binary_assign_impl<RuleStruct>(out, a, b);
+    return out;
+}
+
+template<template<typename> typename RuleStruct, typename T, size_t NVARS, size_t NORDER>
+XDIFF_INLINE_HOST_DEVICE
+Dual<T, NVARS, NORDER, Layout::Nested> 
+binary_op_impl(const Seed<T, NVARS, NORDER, Layout::Nested>& a,
+               const Dual<T, NVARS, NORDER, Layout::Nested>& b) {
+    Dual<T, NVARS, NORDER, Layout::Nested> out(MakeDual{.nvars = b.nvars(), .order = b.order()});
+    binary_assign_impl<RuleStruct>(out, a, b);
+    return out;
+}
+
+template<template<typename> typename RuleStruct, typename T, size_t NVARS, size_t NORDER>
+XDIFF_INLINE_HOST_DEVICE
+Dual<T, NVARS, NORDER, Layout::Nested> 
+binary_op_impl(const Seed<T, NVARS, NORDER, Layout::Nested>& a,
+               const Seed<T, NVARS, NORDER, Layout::Nested>& b) {
+    Dual<T, NVARS, NORDER, Layout::Nested> out(MakeDual{.nvars = a.nvars(), .order = a.order()});
     binary_assign_impl<RuleStruct>(out, a, b);
     return out;
 }
 
 template<template<typename> typename RuleStruct, typename F, typename T, size_t NVARS, size_t NORDER>
+requires (::xdiff::detail::isScalarOperand<F, T>)
 XDIFF_INLINE_HOST_DEVICE
 Dual<T, NVARS, NORDER, Layout::Nested> 
 binary_op_impl(const F& a, const Dual<T, NVARS, NORDER, Layout::Nested>& b) {
-    Dual<T, NVARS, NORDER, Layout::Nested> out(MakeDual{.nvars = b.nvars()});
+    Dual<T, NVARS, NORDER, Layout::Nested> out(MakeDual{.nvars = b.nvars(), .order = b.order()});
     binary_assign_impl<RuleStruct>(out, a, b);
     return out;
 }
 
 template<template<typename> typename RuleStruct, typename F, typename T, size_t NVARS, size_t NORDER>
+requires (::xdiff::detail::isScalarOperand<F, T>)
 XDIFF_INLINE_HOST_DEVICE
-Dual<T, NVARS, NORDER, Layout::Nested> 
+Dual<T, NVARS, NORDER, Layout::Nested>
 binary_op_impl(const Dual<T, NVARS, NORDER, Layout::Nested>& a, const F& b) {
-    Dual<T, NVARS, NORDER, Layout::Nested> out(MakeDual{.nvars = a.nvars()});
+    Dual<T, NVARS, NORDER, Layout::Nested> out(MakeDual{.nvars = a.nvars(), .order = a.order()});
+    binary_assign_impl<RuleStruct>(out, a, b);
+    return out;
+}
+
+template<template<typename> typename RuleStruct, typename F, typename T, size_t NVARS, size_t NORDER>
+requires (::xdiff::detail::isScalarOperand<F, T>)
+XDIFF_INLINE_HOST_DEVICE
+Dual<T, NVARS, NORDER, Layout::Nested>
+binary_op_impl(const F& a, const Seed<T, NVARS, NORDER, Layout::Nested>& b) {
+    Dual<T, NVARS, NORDER, Layout::Nested> out(MakeDual{.nvars = b.nvars(), .order = b.order()});
+    binary_assign_impl<RuleStruct>(out, a, b);
+    return out;
+}
+
+template<template<typename> typename RuleStruct, typename F, typename T, size_t NVARS, size_t NORDER>
+requires (::xdiff::detail::isScalarOperand<F, T>)
+XDIFF_INLINE_HOST_DEVICE
+Dual<T, NVARS, NORDER, Layout::Nested>
+binary_op_impl(const Seed<T, NVARS, NORDER, Layout::Nested>& a, const F& b) {
+    Dual<T, NVARS, NORDER, Layout::Nested> out(MakeDual{.nvars = a.nvars(), .order = a.order()});
     binary_assign_impl<RuleStruct>(out, a, b);
     return out;
 }
@@ -161,8 +388,17 @@ binary_op_impl(const Dual<T, NVARS, NORDER, Layout::Nested>& a, const F& b) {
 #define XDIFF_DEFINE_NESTED_DUAL_UNARY_OPERATION(NAME, ASSIGN_NAME, STRUCT) \
 template<typename T, size_t NVARS, size_t NORDER> \
 XDIFF_INLINE_HOST_DEVICE \
-Dual<T, NVARS, NORDER, Layout::Nested>& ASSIGN_NAME(Dual<T, NVARS, NORDER, Layout::Nested>& out, \
-                    const Dual<T, NVARS, NORDER, Layout::Nested>& arg) { \
+Dual<T, NVARS, NORDER, Layout::Nested>& ASSIGN_NAME( \
+    Dual<T, NVARS, NORDER, Layout::Nested>& out, \
+    const Dual<T, NVARS, NORDER, Layout::Nested>& arg) { \
+    return xdiff::detail::unary_assign_impl<STRUCT>(out, arg); \
+} \
+\
+template<typename T, size_t NVARS, size_t NORDER> \
+XDIFF_INLINE_HOST_DEVICE \
+Dual<T, NVARS, NORDER, Layout::Nested>& ASSIGN_NAME( \
+    Dual<T, NVARS, NORDER, Layout::Nested>& out, \
+    const Seed<T, NVARS, NORDER, Layout::Nested>& arg) { \
     return xdiff::detail::unary_assign_impl<STRUCT>(out, arg); \
 } \
 \
@@ -171,8 +407,13 @@ template<typename T, size_t NVARS, size_t NORDER> \
 XDIFF_INLINE_HOST_DEVICE \
 auto NAME(const Dual<T, NVARS, NORDER, Layout::Nested>& arg) { \
     return xdiff::detail::unary_op_impl<STRUCT>(arg); \
+}\
+\
+template<typename T, size_t NVARS, size_t NORDER> \
+XDIFF_INLINE_HOST_DEVICE \
+auto NAME(const Seed<T, NVARS, NORDER, Layout::Nested>& arg) { \
+    return xdiff::detail::unary_op_impl<STRUCT>(arg); \
 }
-
 
 
 
@@ -180,40 +421,134 @@ auto NAME(const Dual<T, NVARS, NORDER, Layout::Nested>& arg) { \
 // Binary operation
 #define XDIFF_DEFINE_NESTED_DUAL_BINARY_OPERATION(NAME, ASSIGN_NAME, STRUCT) \
 template<typename T, size_t NVARS, size_t NORDER> \
-XDIFF_INLINE_HOST_DEVICE Dual<T,NVARS,NORDER,Layout::Nested>& ASSIGN_NAME(Dual<T,NVARS,NORDER,Layout::Nested>& out, \
+XDIFF_INLINE_HOST_DEVICE Dual<T,NVARS,NORDER,Layout::Nested>& ASSIGN_NAME( \
+    Dual<T,NVARS,NORDER,Layout::Nested>& out, \
     const Dual<T,NVARS,NORDER,Layout::Nested>& a, \
     const Dual<T,NVARS,NORDER,Layout::Nested>& b){ \
     return xdiff::detail::binary_assign_impl<STRUCT>(out, a, b); \
 } \
 \
+template<typename T, size_t NVARS, size_t NORDER> \
+XDIFF_INLINE_HOST_DEVICE Dual<T,NVARS,NORDER,Layout::Nested>& ASSIGN_NAME( \
+    Dual<T,NVARS,NORDER,Layout::Nested>& out, \
+    const Seed<T,NVARS,NORDER,Layout::Nested>& a, \
+    const Dual<T,NVARS,NORDER,Layout::Nested>& b){ \
+    return xdiff::detail::binary_assign_impl<STRUCT>(out, a, b); \
+} \
 \
-template<typename F, typename T, size_t NVARS, size_t NORDER> \
-XDIFF_INLINE_HOST_DEVICE Dual<T,NVARS,NORDER,Layout::Nested>& ASSIGN_NAME(Dual<T,NVARS,NORDER,Layout::Nested>& out, \
-    const F& a, const Dual<T,NVARS,NORDER,Layout::Nested>& b){ \
+template<typename T, size_t NVARS, size_t NORDER> \
+XDIFF_INLINE_HOST_DEVICE Dual<T,NVARS,NORDER,Layout::Nested>& ASSIGN_NAME( \
+    Dual<T,NVARS,NORDER,Layout::Nested>& out, \
+    const Dual<T,NVARS,NORDER,Layout::Nested>& a, \
+    const Seed<T,NVARS,NORDER,Layout::Nested>& b){ \
+    return xdiff::detail::binary_assign_impl<STRUCT>(out, a, b); \
+} \
+\
+template<typename T, size_t NVARS, size_t NORDER> \
+XDIFF_INLINE_HOST_DEVICE Dual<T,NVARS,NORDER,Layout::Nested>& ASSIGN_NAME( \
+    Dual<T,NVARS,NORDER,Layout::Nested>& out, \
+    const Seed<T,NVARS,NORDER,Layout::Nested>& a, \
+    const Seed<T,NVARS,NORDER,Layout::Nested>& b){ \
     return xdiff::detail::binary_assign_impl<STRUCT>(out, a, b); \
 } \
 \
 \
 template<typename F, typename T, size_t NVARS, size_t NORDER> \
-XDIFF_INLINE_HOST_DEVICE Dual<T,NVARS,NORDER,Layout::Nested>& ASSIGN_NAME(Dual<T,NVARS,NORDER,Layout::Nested>& out, \
-    const Dual<T,NVARS,NORDER,Layout::Nested>& a, const F& b){ \
+requires (::xdiff::detail::isScalarOperand<F, T>) \
+XDIFF_INLINE_HOST_DEVICE Dual<T,NVARS,NORDER,Layout::Nested>& ASSIGN_NAME( \
+    Dual<T,NVARS,NORDER,Layout::Nested>& out, \
+    const F& a,\
+    const Dual<T,NVARS,NORDER,Layout::Nested>& b){ \
+    return xdiff::detail::binary_assign_impl<STRUCT>(out, a, b); \
+} \
+\
+\
+template<typename F, typename T, size_t NVARS, size_t NORDER> \
+requires (::xdiff::detail::isScalarOperand<F, T>) \
+XDIFF_INLINE_HOST_DEVICE Dual<T,NVARS,NORDER,Layout::Nested>& ASSIGN_NAME( \
+    Dual<T,NVARS,NORDER,Layout::Nested>& out, \
+    const Dual<T,NVARS,NORDER,Layout::Nested>& a, \
+    const F& b){ \
+    return xdiff::detail::binary_assign_impl<STRUCT>(out, a, b); \
+} \
+\
+\
+template<typename F, typename T, size_t NVARS, size_t NORDER> \
+requires (::xdiff::detail::isScalarOperand<F, T>) \
+XDIFF_INLINE_HOST_DEVICE Dual<T,NVARS,NORDER,Layout::Nested>& ASSIGN_NAME( \
+    Dual<T,NVARS,NORDER,Layout::Nested>& out, \
+    const F& a,\
+    const Seed<T,NVARS,NORDER,Layout::Nested>& b){ \
+    return xdiff::detail::binary_assign_impl<STRUCT>(out, a, b); \
+} \
+\
+\
+template<typename F, typename T, size_t NVARS, size_t NORDER> \
+requires (::xdiff::detail::isScalarOperand<F, T>) \
+XDIFF_INLINE_HOST_DEVICE Dual<T,NVARS,NORDER,Layout::Nested>& ASSIGN_NAME( \
+    Dual<T,NVARS,NORDER,Layout::Nested>& out, \
+    const Seed<T,NVARS,NORDER,Layout::Nested>& a, \
+    const F& b){ \
     return xdiff::detail::binary_assign_impl<STRUCT>(out, a, b); \
 } \
 \
 \
 template<typename T, size_t NVARS, size_t NORDER> \
-XDIFF_INLINE_HOST_DEVICE auto NAME(const Dual<T,NVARS,NORDER,Layout::Nested>& a, \
+XDIFF_INLINE_HOST_DEVICE auto NAME( \
+    const Dual<T,NVARS,NORDER,Layout::Nested>& a, \
     const Dual<T,NVARS,NORDER,Layout::Nested>& b){ \
     return xdiff::detail::binary_op_impl<STRUCT>(a, b); \
 } \
 \
+template<typename T, size_t NVARS, size_t NORDER> \
+XDIFF_INLINE_HOST_DEVICE auto NAME( \
+    const Seed<T,NVARS,NORDER,Layout::Nested>& a, \
+    const Dual<T,NVARS,NORDER,Layout::Nested>& b){ \
+    return xdiff::detail::binary_op_impl<STRUCT>(a, b); \
+} \
+\
+template<typename T, size_t NVARS, size_t NORDER> \
+XDIFF_INLINE_HOST_DEVICE auto NAME( \
+    const Dual<T,NVARS,NORDER,Layout::Nested>& a, \
+    const Seed<T,NVARS,NORDER,Layout::Nested>& b){ \
+    return xdiff::detail::binary_op_impl<STRUCT>(a, b); \
+} \
+\
+\
+template<typename T, size_t NVARS, size_t NORDER> \
+XDIFF_INLINE_HOST_DEVICE auto NAME( \
+    const Seed<T,NVARS,NORDER,Layout::Nested>& a, \
+    const Seed<T,NVARS,NORDER,Layout::Nested>& b){ \
+    return xdiff::detail::binary_op_impl<STRUCT>(a, b); \
+} \
 \
 template<typename F, typename T, size_t NVARS, size_t NORDER> \
-XDIFF_INLINE_HOST_DEVICE auto NAME(const F& a, const Dual<T,NVARS,NORDER,Layout::Nested>& b){ \
+requires (::xdiff::detail::isScalarOperand<F, T>) \
+XDIFF_INLINE_HOST_DEVICE auto NAME( \
+    const F& a, \
+    const Dual<T,NVARS,NORDER,Layout::Nested>& b){ \
     return xdiff::detail::binary_op_impl<STRUCT>(a, b); \
 } \
 template<typename F, typename T, size_t NVARS, size_t NORDER> \
-XDIFF_INLINE_HOST_DEVICE auto NAME(const Dual<T,NVARS,NORDER,Layout::Nested>& a, const F& b){ \
+requires (::xdiff::detail::isScalarOperand<F, T>) \
+XDIFF_INLINE_HOST_DEVICE auto NAME( \
+    const Dual<T,NVARS,NORDER,Layout::Nested>& a, \
+    const F& b){ \
+    return xdiff::detail::binary_op_impl<STRUCT>(a, b); \
+} \
+\
+template<typename F, typename T, size_t NVARS, size_t NORDER> \
+requires (::xdiff::detail::isScalarOperand<F, T>) \
+XDIFF_INLINE_HOST_DEVICE auto NAME( \
+    const F& a, \
+    const Seed<T,NVARS,NORDER,Layout::Nested>& b){ \
+    return xdiff::detail::binary_op_impl<STRUCT>(a, b); \
+} \
+template<typename F, typename T, size_t NVARS, size_t NORDER> \
+requires (::xdiff::detail::isScalarOperand<F, T>) \
+XDIFF_INLINE_HOST_DEVICE auto NAME( \
+    const Seed<T,NVARS,NORDER,Layout::Nested>& a, \
+    const F& b){ \
     return xdiff::detail::binary_op_impl<STRUCT>(a, b); \
 }
 

@@ -2,7 +2,7 @@
 #define XDIFF_RULES_CORE_HPP
 
 #include <cmath>
-#include "../dual/dual_base.hpp" // IWYU pragma: keep
+#include "../dual/dual.hpp" // IWYU pragma: keep
 
 
 namespace xdiff::detail::rules{
@@ -164,7 +164,9 @@ struct Pow : BaseOperand<T, Pow<T>>{
     template<typename A, typename B, typename DA, typename DB>
     XDIFF_INLINE_HOST_DEVICE
     static auto diff_rule(const DiffPair<A, DA>& a, const DiffPair<B, DB>& b) {
-        if constexpr (DiffPair<B, DB>::isTrivial()) {
+        if constexpr (DiffPair<A, DA>::isTrivial() && DiffPair<B, DB>::isTrivial()) {
+            return 0;  // const^const: derivative is 0
+        } else if constexpr (DiffPair<B, DB>::isTrivial()) {
             // a^const: d/dx = const * a^(const-1) * da
             return a.grad * b.value * pow(a.value, b.value - 1);
         } else if constexpr (DiffPair<A, DA>::isTrivial()) {

@@ -5,6 +5,7 @@
 
 
 #define XDIFF_DUAL Dual<T, NVARS, NORDER, Layout::Nested>
+#define XDIFF_SEED Seed<T, NVARS, NORDER, Layout::Nested>
 
 namespace xdiff{
 
@@ -15,11 +16,7 @@ namespace xdiff{
 template<typename T, size_t NVARS, size_t NORDER>
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_add(XDIFF_DUAL& out, const XDIFF_DUAL& arg){
-    if constexpr (NVARS == 0) {
-        if (out.nvars() != arg.nvars()) {
-            out.set_nvars(arg.nvars());
-        }
-    }
+    format_nested(out, arg);
     out.true_value += arg.true_value;
     for (size_t i=0; i < arg.nvars(); i++){
         out[i] += arg[i];
@@ -27,13 +24,21 @@ XDIFF_DUAL& assign_compound_add(XDIFF_DUAL& out, const XDIFF_DUAL& arg){
     return out;
 }
 
+template<typename T, size_t NVARS, size_t NORDER>
+XDIFF_INLINE_HOST_DEVICE
+XDIFF_DUAL& assign_compound_add(XDIFF_DUAL& out, const XDIFF_SEED& arg){
+    format_nested(out, arg);
+    // A seed variable adds its value, and a unit derivative along its own axis only.
+    out.true_value += arg.trimmed();
+    out[arg.axis()] += 1;
+    return out;
+}
+
 template<typename F, typename T, size_t NVARS, size_t NORDER>
+requires (::xdiff::detail::isScalarOperand<F, T>)
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_add(XDIFF_DUAL& out, const F& arg){
-    out.true_value += arg;
-    for (size_t i=0; i < out.nvars(); i++){
-        out[i] += arg;
-    }
+    out.true_value += arg;   // adding a constant leaves every derivative untouched
     return out;
 }
 
@@ -42,11 +47,7 @@ XDIFF_DUAL& assign_compound_add(XDIFF_DUAL& out, const F& arg){
 template<typename T, size_t NVARS, size_t NORDER>
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_sub(XDIFF_DUAL& out, const XDIFF_DUAL& arg){
-    if constexpr (NVARS == 0) {
-        if (out.nvars() != arg.nvars()) {
-            out.set_nvars(arg.nvars());
-        }
-    }
+    format_nested(out, arg);
     out.true_value -= arg.true_value;
     for (size_t i=0; i < arg.nvars(); i++){
         out[i] -= arg[i];
@@ -54,13 +55,21 @@ XDIFF_DUAL& assign_compound_sub(XDIFF_DUAL& out, const XDIFF_DUAL& arg){
     return out;
 }
 
+template<typename T, size_t NVARS, size_t NORDER>
+XDIFF_INLINE_HOST_DEVICE
+XDIFF_DUAL& assign_compound_sub(XDIFF_DUAL& out, const XDIFF_SEED& arg){
+    format_nested(out, arg);
+    // A seed variable subtracts its value, and a unit derivative along its own axis only.
+    out.true_value -= arg.trimmed();
+    out[arg.axis()] -= 1;
+    return out;
+}
+
 template<typename F, typename T, size_t NVARS, size_t NORDER>
+requires (::xdiff::detail::isScalarOperand<F, T>)
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_sub(XDIFF_DUAL& out, const F& arg){
-    out.true_value -= arg;
-    for (size_t i=0; i < out.nvars(); i++){
-        out[i] -= arg;
-    }
+    out.true_value -= arg;   // subtracting a constant leaves every derivative untouched
     return out;
 }
 
@@ -68,13 +77,9 @@ XDIFF_DUAL& assign_compound_sub(XDIFF_DUAL& out, const F& arg){
 template<typename T, size_t NVARS, size_t NORDER>
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_mul(XDIFF_DUAL& out, const XDIFF_DUAL& arg){
-    if constexpr (NVARS == 0) {
-        if (out.nvars() != arg.nvars()) {
-            out.set_nvars(arg.nvars());
-        }
-    }
+    format_nested(out, arg);
     using G = typename XDIFF_DUAL::grad_type;
-    using DP = xdiff::DiffPair<const G&, const G&>;
+    using DP = DiffPair<const G&, const G&>;
     for (size_t i=0; i < out.nvars(); i++){
         out[i] = xdiff::detail::rules::Mul<T>::diff_rule(DP{out.true_value, out[i]}, DP{arg.true_value, arg[i]});
     }
@@ -82,7 +87,14 @@ XDIFF_DUAL& assign_compound_mul(XDIFF_DUAL& out, const XDIFF_DUAL& arg){
     return out;
 }
 
+template<typename T, size_t NVARS, size_t NORDER>
+XDIFF_INLINE_HOST_DEVICE
+XDIFF_DUAL& assign_compound_mul(XDIFF_DUAL& out, const XDIFF_SEED& arg){
+    return out = out * arg;
+}
+
 template<typename F, typename T, size_t NVARS, size_t NORDER>
+requires (::xdiff::detail::isScalarOperand<F, T>)
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_mul(XDIFF_DUAL& out, const F& arg){
     out.true_value *= arg;
@@ -96,13 +108,9 @@ XDIFF_DUAL& assign_compound_mul(XDIFF_DUAL& out, const F& arg){
 template<typename T, size_t NVARS, size_t NORDER>
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_div(XDIFF_DUAL& out, const XDIFF_DUAL& arg){
-    if constexpr (NVARS == 0) {
-        if (out.nvars() != arg.nvars()) {
-            out.set_nvars(arg.nvars());
-        }
-    }
+    format_nested(out, arg);
     using G = typename XDIFF_DUAL::grad_type;
-    using DP = xdiff::DiffPair<const G&, const G&>;
+    using DP = DiffPair<const G&, const G&>;
     for (size_t i=0; i < out.nvars(); i++){
         out[i] = xdiff::detail::rules::Div<T>::diff_rule(DP{out.true_value, out[i]}, DP{arg.true_value, arg[i]});
     }
@@ -110,7 +118,14 @@ XDIFF_DUAL& assign_compound_div(XDIFF_DUAL& out, const XDIFF_DUAL& arg){
     return out;
 }
 
+template<typename T, size_t NVARS, size_t NORDER>
+XDIFF_INLINE_HOST_DEVICE
+XDIFF_DUAL& assign_compound_div(XDIFF_DUAL& out, const XDIFF_SEED& arg){
+    return out = out / arg;
+}
+
 template<typename F, typename T, size_t NVARS, size_t NORDER>
+requires (::xdiff::detail::isScalarOperand<F, T>)
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_div(XDIFF_DUAL& out, const F& arg){
     out.true_value /= arg;
@@ -129,7 +144,14 @@ XDIFF_DUAL& operator+=(XDIFF_DUAL& a, const XDIFF_DUAL& b){
     return assign_compound_add(a, b);
 }
 
+template<typename T, size_t NVARS, size_t NORDER>
+XDIFF_INLINE_HOST_DEVICE
+XDIFF_DUAL& operator+=(XDIFF_DUAL& a, const XDIFF_SEED& b){
+    return assign_compound_add(a, b);
+}
+
 template<typename F, typename T, size_t NVARS, size_t NORDER>
+requires (::xdiff::detail::isScalarOperand<F, T>)
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& operator+=(XDIFF_DUAL& a, const F& b){
     return assign_compound_add(a, b);
@@ -142,7 +164,14 @@ XDIFF_DUAL& operator-=(XDIFF_DUAL& a, const XDIFF_DUAL& b){
     return assign_compound_sub(a, b);
 }
 
+template<typename T, size_t NVARS, size_t NORDER>
+XDIFF_INLINE_HOST_DEVICE
+XDIFF_DUAL& operator-=(XDIFF_DUAL& a, const XDIFF_SEED& b){
+    return assign_compound_sub(a, b);
+}
+
 template<typename F, typename T, size_t NVARS, size_t NORDER>
+requires (::xdiff::detail::isScalarOperand<F, T>)
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& operator-=(XDIFF_DUAL& a, const F& b){
     return assign_compound_sub(a, b);
@@ -155,7 +184,14 @@ XDIFF_DUAL& operator*=(XDIFF_DUAL& a, const XDIFF_DUAL& b){
     return assign_compound_mul(a, b);
 }
 
+template<typename T, size_t NVARS, size_t NORDER>
+XDIFF_INLINE_HOST_DEVICE
+XDIFF_DUAL& operator*=(XDIFF_DUAL& a, const XDIFF_SEED& b){
+    return assign_compound_mul(a, b);
+}
+
 template<typename F, typename T, size_t NVARS, size_t NORDER>
+requires (::xdiff::detail::isScalarOperand<F, T>)
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& operator*=(XDIFF_DUAL& a, const F& b){
     return assign_compound_mul(a, b);
@@ -168,7 +204,14 @@ XDIFF_DUAL& operator/=(XDIFF_DUAL& a, const XDIFF_DUAL& b){
     return assign_compound_div(a, b);
 }
 
+template<typename T, size_t NVARS, size_t NORDER>
+XDIFF_INLINE_HOST_DEVICE
+XDIFF_DUAL& operator/=(XDIFF_DUAL& a, const XDIFF_SEED& b){
+    return assign_compound_div(a, b);
+}
+
 template<typename F, typename T, size_t NVARS, size_t NORDER>
+requires (::xdiff::detail::isScalarOperand<F, T>)
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& operator/=(XDIFF_DUAL& a, const F& b){
     return assign_compound_div(a, b);
@@ -210,6 +253,7 @@ XDIFF_DEFINE_NESTED_DUAL_UNARY_OPERATION(erf, assign_erf, xdiff::detail::rules::
 
 
 #undef XDIFF_DUAL
+#undef XDIFF_SEED
 
 
 #endif // XDIFF_DUAL_NESTED_OPERATORS_HPP
