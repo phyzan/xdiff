@@ -226,7 +226,7 @@ public:
     template<size_t No>
     XDIFF_INLINE_HOST_DEVICE
     Dual& operator=(const Seed<T, NVARS, No, Layout::Flat>& seed) {
-        assert(seed.nvars() == NVARS && "nvars must match NVARS when assigning a Seed to a Dual");
+        assert(seed.nvars() == this->nvars() && "nvars must match NVARS when assigning a Seed to a Dual");
         *this = seed.value();
         if constexpr (NORDER > 0) {
             data_[1 + seed.axis()] = 1;
@@ -576,59 +576,46 @@ struct HelperBaseOperandEvaluator{
         // Every Seed overload below deduces its order rather than naming Norder, because
         // Evaluator is also instantiated at Norder == 0, where no Seed can exist.
 
-        /// @brief Identity for Dual arguments.
-        XDIFF_INLINE_DEVICE
-        static decltype(auto) masked_value(const AD& item){
-            return item;
-        }
-
-        /// @brief Converts scalars to the appropriate numeric type.
-        template<typename U>
-        XDIFF_INLINE_DEVICE
-        static decltype(auto) masked_value(U&& item){
-            return T(item);
-        }
-
         /// @brief Extracts the scalar value from a Dual.
         XDIFF_INLINE_DEVICE
-        static T get_value(const AD& f) {
+        static const T& get_value(const AD& f) {
             return f.value();
         }
 
         /// @brief Extracts the scalar value from a Seed.
         template<size_t Nv, size_t No>
         XDIFF_INLINE_DEVICE
-        static T get_value(const Seed<T, Nv, No, Layout::Flat>& f) {
+        static const T& get_value(const Seed<T, Nv, No, Layout::Flat>& f) {
             return f.value();
         }
 
-        /// @brief Converts a scalar argument to T.
+        /// @brief A scalar argument is already its own value.
         template<typename U>
         XDIFF_INLINE_DEVICE
-        static T get_value(const U& f) {
+        static const U& get_value(const U& f) {
             static_assert(std::is_convertible_v<U, T>, "Invalid argument");
-            return masked_value(f);
+            return f;
         }
 
         /// @brief Gets the reduced-order representation of a Dual.
         template<size_t Nv, size_t No>
         XDIFF_INLINE_DEVICE
-        static auto reduced_value(const Dual<T, Nv, No, Layout::Flat>& f){
+        static decltype(auto) reduced_value(const Dual<T, Nv, No, Layout::Flat>& f){
             return f.trimmed();
         }
 
         /// @brief Gets the reduced-order representation of a Seed.
         template<size_t Nv, size_t No>
         XDIFF_INLINE_DEVICE
-        static auto reduced_value(const Seed<T, Nv, No, Layout::Flat>& f){
+        static decltype(auto) reduced_value(const Seed<T, Nv, No, Layout::Flat>& f){
             return f.trimmed();
         }
 
         /// @brief Scalars have trivial reduced representation.
         template<typename U>
         XDIFF_INLINE_DEVICE
-        static auto reduced_value(const U& f){
-            return T(f);
+        static const U& reduced_value(const U& f){
+            return f;
         }
 
         /// @brief Gets the reduced derivative w.r.t. variable I from a Dual.
@@ -643,7 +630,7 @@ struct HelperBaseOperandEvaluator{
         template<size_t I, size_t Nv, size_t No>
         XDIFF_INLINE_DEVICE
         static auto reduced_diff(const Seed<T, Nv, No, Layout::Flat>& f){
-            return T(f.axis() == I ? 1 : 0);
+            return (f.axis() == I ? 1 : 0);
         }
 
         /// @brief Scalars have zero derivative.
