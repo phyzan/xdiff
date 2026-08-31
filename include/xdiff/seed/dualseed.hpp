@@ -130,8 +130,9 @@ public:
     // The "nvars" and "order" arguments follow the MakeDual convention: the zero value selects the
     // compile-time NVARS / NORDER, or the default runtime number of variables when NVARS is zero.
     XDIFF_INLINE_HOST_DEVICE
-    SeedVector(const T* seed, size_t nvars = 0, size_t order = 0) : seed_(seed), size_(nv(nvars)) {
-        assert((order == NORDER || order == 0) && "order must match NORDER for a compile-time known order in SeedVector");
+    SeedVector(const T* seed, size_t nvars = NVARS, size_t order = NORDER) : seed_(seed), size_(nv(nvars)) {
+        assert((order == NORDER || NORDER == 0) && "order must match NORDER for a compile-time known order in SeedVector");
+        assert((nvars == NVARS || NVARS == 0) && "nvars must match NVARS for a compile-time known number of variables in SeedVector");
         (void)order;
     }
 
@@ -243,6 +244,12 @@ public:
     XDIFF_INLINE_HOST_DEVICE
     constexpr size_t order() const{
         return NORDER;
+    }
+
+    template<size_t Order>
+    XDIFF_INLINE_HOST_DEVICE
+    SeedVector<T, NVARS, Order, LY> with_order() const {
+        return SeedVector<T, NVARS, Order, LY>{seed_, nvars(), Order} + idx_;
     }
 
 private:
