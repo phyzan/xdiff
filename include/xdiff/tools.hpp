@@ -116,7 +116,7 @@ xdiff::tools::Expand<N>([&]<size_t... I>() XDIFF_LAMBDA_INLINE { \
 
 #define XDIFF_THIS static_cast<std::conditional_t<std::is_void_v<Derived>, \
     std::remove_reference_t<decltype(*this)>, \
-    xdiff::detail::copy_const_t<std::remove_reference_t<decltype(*this)>, Derived>>*>(this)
+    ::xdiff::detail::copy_const_t<std::remove_reference_t<decltype(*this)>, Derived>>*>(this)
 
 
 namespace xdiff::detail{

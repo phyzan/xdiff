@@ -3,6 +3,7 @@
 
 
 #include "dual.hpp" // IWYU pragma: keep
+#include "../seed/dualseed.hpp" // IWYU pragma: keep
 #include <lazy/lazy.hpp>
 
 
@@ -143,6 +144,18 @@ struct CustomBinaryEvaluator<xdiff::Dual<T, NVARS, NORDER, LY>> : public BinaryE
         xdiff::assign_add(out, a, b);
     }
 
+    // The order is deduced rather than named, so that Seed is never instantiated for an
+    // order this Dual cannot seed (a Seed always carries at least one derivative order).
+    template<size_t No>
+    LAZY_FORCE_INLINE static void evaluate(lazy::tags::PLUS /**/, DualType& out, const DualType& a, const xdiff::Seed<T, NVARS, No, LY>& b){
+        xdiff::assign_add(out, a, b);
+    }
+
+    template<size_t No>
+    LAZY_FORCE_INLINE static void evaluate(lazy::tags::PLUS /**/, DualType& out, const xdiff::Seed<T, NVARS, No, LY>& a, const DualType& b){
+        xdiff::assign_add(out, a, b);
+    }
+
 
     LAZY_EVALUATE_OPER(DualType, a, b, DualType, lazy::tags::MINUS, DualType){
         xdiff::assign_sub(out, a, b);
@@ -155,6 +168,18 @@ struct CustomBinaryEvaluator<xdiff::Dual<T, NVARS, NORDER, LY>> : public BinaryE
 
     template<arithmetic F>
     LAZY_FORCE_INLINE static void evaluate(lazy::tags::MINUS /**/, DualType& out, const F& a, const DualType& b){
+        xdiff::assign_sub(out, a, b);
+    }
+
+    // The order is deduced rather than named, so that Seed is never instantiated for an
+    // order this Dual cannot seed (a Seed always carries at least one derivative order).
+    template<size_t No>
+    LAZY_FORCE_INLINE static void evaluate(lazy::tags::MINUS /**/, DualType& out, const DualType& a, const xdiff::Seed<T, NVARS, No, LY>& b){
+        xdiff::assign_sub(out, a, b);
+    }
+
+    template<size_t No>
+    LAZY_FORCE_INLINE static void evaluate(lazy::tags::MINUS /**/, DualType& out, const xdiff::Seed<T, NVARS, No, LY>& a, const DualType& b){
         xdiff::assign_sub(out, a, b);
     }
 
@@ -174,6 +199,18 @@ struct CustomBinaryEvaluator<xdiff::Dual<T, NVARS, NORDER, LY>> : public BinaryE
         xdiff::assign_mul(out, a, b);
     }
 
+    // The order is deduced rather than named, so that Seed is never instantiated for an
+    // order this Dual cannot seed (a Seed always carries at least one derivative order).
+    template<size_t No>
+    LAZY_FORCE_INLINE static void evaluate(lazy::tags::MUL /**/, DualType& out, const DualType& a, const xdiff::Seed<T, NVARS, No, LY>& b){
+        xdiff::assign_mul(out, a, b);
+    }
+
+    template<size_t No>
+    LAZY_FORCE_INLINE static void evaluate(lazy::tags::MUL /**/, DualType& out, const xdiff::Seed<T, NVARS, No, LY>& a, const DualType& b){
+        xdiff::assign_mul(out, a, b);
+    }
+
     // Division
     LAZY_EVALUATE_OPER(DualType, a, b, DualType, lazy::tags::DIV, DualType){
         xdiff::assign_div(out, a, b);
@@ -186,6 +223,18 @@ struct CustomBinaryEvaluator<xdiff::Dual<T, NVARS, NORDER, LY>> : public BinaryE
 
     template<arithmetic F>
     LAZY_FORCE_INLINE static void evaluate(lazy::tags::DIV /**/, DualType& out, const F& a, const DualType& b){
+        xdiff::assign_div(out, a, b);
+    }
+
+    // The order is deduced rather than named, so that Seed is never instantiated for an
+    // order this Dual cannot seed (a Seed always carries at least one derivative order).
+    template<size_t No>
+    LAZY_FORCE_INLINE static void evaluate(lazy::tags::DIV /**/, DualType& out, const DualType& a, const xdiff::Seed<T, NVARS, No, LY>& b){
+        xdiff::assign_div(out, a, b);
+    }
+
+    template<size_t No>
+    LAZY_FORCE_INLINE static void evaluate(lazy::tags::DIV /**/, DualType& out, const xdiff::Seed<T, NVARS, No, LY>& a, const DualType& b){
         xdiff::assign_div(out, a, b);
     }
 
@@ -204,6 +253,18 @@ struct CustomBinaryEvaluator<xdiff::Dual<T, NVARS, NORDER, LY>> : public BinaryE
         xdiff::assign_pow(out, a, b);
     }
 
+    // The order is deduced rather than named, so that Seed is never instantiated for an
+    // order this Dual cannot seed (a Seed always carries at least one derivative order).
+    template<size_t No>
+    LAZY_FORCE_INLINE static void evaluate(lazy::tags::POW /**/, DualType& out, const DualType& a, const xdiff::Seed<T, NVARS, No, LY>& b){
+        xdiff::assign_pow(out, a, b);
+    }
+
+    template<size_t No>
+    LAZY_FORCE_INLINE static void evaluate(lazy::tags::POW /**/, DualType& out, const xdiff::Seed<T, NVARS, No, LY>& a, const DualType& b){
+        xdiff::assign_pow(out, a, b);
+    }
+
 
 };
 
@@ -219,8 +280,16 @@ namespace std{
 template<typename T, size_t NVARS, size_t NORDER, xdiff::Layout LY>
 class numeric_limits<lazy::detail::LazyType<xdiff::Dual<T, NVARS, NORDER, LY>>> : public numeric_limits<T>{};
 }
+// A LazyType<Dual> may interact with a plain scalar, and with the Seed standing for a seed
+// variable of the same Dual type: a seed meets a lazy gradient whenever a SeedVector element takes
+// part in an operation on a nested Dual with a runtime number of variables. Admitting it here lets
+// the seed enter the expression graph, instead of binding to the overloads meant for a scalar and
+// losing its unit derivative. A Seed is stored by value in the node (lazy::detail::OtherType),
+// so the temporary returned by Seed::trimmed() is copied rather than referenced.
 template<typename F, typename T, size_t NVARS, size_t NORDER, xdiff::Layout LY>
-constexpr bool lazy::traits::lazyConvertCondition<F, xdiff::Dual<T, NVARS, NORDER, LY>> = std::is_arithmetic_v<std::decay_t<F>>;
+constexpr bool lazy::traits::lazyConvertCondition<F, xdiff::Dual<T, NVARS, NORDER, LY>> =
+    std::is_arithmetic_v<std::decay_t<F>>
+    || std::is_same_v<std::decay_t<F>, xdiff::Seed<T, NVARS, NORDER, LY>>;
 
 
 namespace lazy {
