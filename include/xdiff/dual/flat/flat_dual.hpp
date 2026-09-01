@@ -94,6 +94,104 @@ public:
         return *this;
     }
 
+    // =========== Compound assignment ===========
+    // These are members so that they can reach the storage directly. Every free
+    // assign_compound_* forwards to them, which is why none of those needs to be a friend.
+
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator+=(const Dual& arg){
+        for (size_t i=0; i < MDBase::Ntot; i++){
+            data_[i] += arg.data_[i];
+        }
+        return *this;
+    }
+
+    template<size_t No>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator+=(const Seed<T, NVARS, No, Layout::Flat>& seed){
+        // Index 0 holds the value and the first-order derivatives follow it, so the seed's unit
+        // derivative lands on 1 + axis. Every higher-order derivative of a seed is zero.
+        assert(seed.nvars() == this->nvars() && "nvars must match NVARS when adding a Seed to a Dual");
+        data_[0] += seed.value();
+        if constexpr (NORDER > 0) {
+            data_[1 + seed.axis()] = data_[1 + seed.axis()] + 1;
+        }
+        return *this;
+    }
+
+    template<detail::isScalarOperand<T> U>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator+=(const U& arg){
+        data_[0] += arg;   // adding a constant leaves every derivative untouched
+        return *this;
+    }
+
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator-=(const Dual& arg){
+        for (size_t i=0; i < MDBase::Ntot; i++){
+            data_[i] -= arg.data_[i];
+        }
+        return *this;
+    }
+
+    template<size_t No>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator-=(const Seed<T, NVARS, No, Layout::Flat>& seed){
+        assert(seed.nvars() == this->nvars() && "nvars must match NVARS when subtracting a Seed from a Dual");
+        data_[0] -= seed.value();
+        if constexpr (NORDER > 0) {
+            data_[1 + seed.axis()] = data_[1 + seed.axis()] - 1;
+        }
+        return *this;
+    }
+
+    template<detail::isScalarOperand<T> U>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator-=(const U& arg){
+        data_[0] -= arg;   // subtracting a constant leaves every derivative untouched
+        return *this;
+    }
+
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator*=(const Dual& arg){
+        return *this = *this * arg;
+    }
+
+    template<size_t No>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator*=(const Seed<T, NVARS, No, Layout::Flat>& seed){
+        return *this = *this * seed;
+    }
+
+    template<detail::isScalarOperand<T> U>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator*=(const U& arg){
+        for (size_t i=0; i < MDBase::Ntot; i++){
+            data_[i] *= arg;
+        }
+        return *this;
+    }
+
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator/=(const Dual& arg){
+        return *this = *this / arg;
+    }
+
+    template<size_t No>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator/=(const Seed<T, NVARS, No, Layout::Flat>& seed){
+        return *this = *this / seed;
+    }
+
+    template<detail::isScalarOperand<T> U>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator/=(const U& arg){
+        for (size_t i=0; i < MDBase::Ntot; i++){
+            data_[i] /= arg;
+        }
+        return *this;
+    }
+
     // =========== Accessors ===========
 
     XDIFF_INLINE_HOST_DEVICE
@@ -300,29 +398,9 @@ protected:
     template<typename STRUCT> friend struct detail::BaseOperandEvaluator;
     template<typename STRUCT> friend struct detail::OperandEvaluator;
 
-    template<typename T2, size_t N2, size_t O2>
-    friend Dual<T2, N2, O2, Layout::Flat>& assign_compound_add(Dual<T2, N2, O2, Layout::Flat>& out, const Dual<T2, N2, O2, Layout::Flat>& arg);
-    template<typename T2, size_t N2, size_t O2>
-    friend Dual<T2, N2, O2, Layout::Flat>& assign_compound_add(Dual<T2, N2, O2, Layout::Flat>& out, const Seed<T2, N2, O2, Layout::Flat>& arg);
-    template<typename F2, typename T2, size_t N2, size_t O2>
-    requires (detail::isScalarOperand<F2, T2>)
-    friend Dual<T2, N2, O2, Layout::Flat>& assign_compound_add(Dual<T2, N2, O2, Layout::Flat>& out, const F2& arg);
 
-    template<typename T2, size_t N2, size_t O2>
-    friend Dual<T2, N2, O2, Layout::Flat>& assign_compound_sub(Dual<T2, N2, O2, Layout::Flat>& out, const Dual<T2, N2, O2, Layout::Flat>& arg);
-    template<typename T2, size_t N2, size_t O2>
-    friend Dual<T2, N2, O2, Layout::Flat>& assign_compound_sub(Dual<T2, N2, O2, Layout::Flat>& out, const Seed<T2, N2, O2, Layout::Flat>& arg);
-    template<typename F2, typename T2, size_t N2, size_t O2>
-    requires (detail::isScalarOperand<F2, T2>)
-    friend Dual<T2, N2, O2, Layout::Flat>& assign_compound_sub(Dual<T2, N2, O2, Layout::Flat>& out, const F2& arg);
 
-    template<typename F2, typename T2, size_t N2, size_t O2>
-    requires (detail::isScalarOperand<F2, T2>)
-    friend Dual<T2, N2, O2, Layout::Flat>& assign_compound_mul(Dual<T2, N2, O2, Layout::Flat>& out, const F2& arg);
 
-    template<typename F2, typename T2, size_t N2, size_t O2>
-    requires (detail::isScalarOperand<F2, T2>)
-    friend Dual<T2, N2, O2, Layout::Flat>& assign_compound_div(Dual<T2, N2, O2, Layout::Flat>& out, const F2& arg);
 
     /// @brief Returns a reference to the element at the given offset in the internal data array. Index 0 is the value, and the derivatives follow in graded order.
     template<std::integral Int>
