@@ -651,48 +651,20 @@ XDIFF_HOST_DEVICE XDIFF_DUAL pow(const F& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_
 // -------------------------------- Compound assignment operator overloads --------------------------------
 
 // Addition
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& operator+=(XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& operator+=(XDIFF_DUAL& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-requires (detail::isScalarOperand<F, T>)
-XDIFF_HOST_DEVICE XDIFF_DUAL& operator+=(XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
 // Subtraction
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& operator-=(XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& operator-=(XDIFF_DUAL& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-requires (detail::isScalarOperand<F, T>)
-XDIFF_HOST_DEVICE XDIFF_DUAL& operator-=(XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
 // Multiplication
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& operator*=(XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& operator*=(XDIFF_DUAL& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-requires (detail::isScalarOperand<F, T>)
-XDIFF_HOST_DEVICE XDIFF_DUAL& operator*=(XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
 // Division
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& operator/=(XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& operator/=(XDIFF_DUAL& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
-requires (detail::isScalarOperand<F, T>)
-XDIFF_HOST_DEVICE XDIFF_DUAL& operator/=(XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
 
 // -------------------------------- Comparison operator overloads --------------------------------

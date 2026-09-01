@@ -3,6 +3,7 @@
 
 
 #include "nested_helpers.hpp"
+#include "../../rules/math.hpp" // IWYU pragma: keep
 
 namespace xdiff::detail{
 
@@ -349,6 +350,116 @@ public:
         return *this;
     }
 
+    // =========== Compound assignment ===========
+
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator+=(const Dual& arg){
+        format_nested(*this, arg);
+        this->true_value += arg.true_value;
+        for (size_t i=0; i < arg.nvars(); i++){
+            (*this)[i] += arg[i];
+        }
+        return *this;
+    }
+
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator+=(const Seed<T, NVARS, NORDER, Layout::Nested>& seed){
+        format_nested(*this, seed);
+        // A seed variable adds its value, and a unit derivative along its own axis only.
+        this->true_value += seed.trimmed();
+        (*this)[seed.axis()] += 1;
+        return *this;
+    }
+
+    template<detail::isScalarOperand<T> U>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator+=(const U& arg){
+        this->true_value += arg;   // adding a constant leaves every derivative untouched
+        return *this;
+    }
+
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator-=(const Dual& arg){
+        format_nested(*this, arg);
+        this->true_value -= arg.true_value;
+        for (size_t i=0; i < arg.nvars(); i++){
+            (*this)[i] -= arg[i];
+        }
+        return *this;
+    }
+
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator-=(const Seed<T, NVARS, NORDER, Layout::Nested>& seed){
+        format_nested(*this, seed);
+        // A seed variable subtracts its value, and a unit derivative along its own axis only.
+        this->true_value -= seed.trimmed();
+        (*this)[seed.axis()] -= 1;
+        return *this;
+    }
+
+    template<detail::isScalarOperand<T> U>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator-=(const U& arg){
+        this->true_value -= arg;   // subtracting a constant leaves every derivative untouched
+        return *this;
+    }
+
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator*=(const Dual& arg){
+        format_nested(*this, arg);
+        using G = typename Base::grad_type;
+        using DP = DiffPair<const G&, const G&>;
+        // The gradient is updated before the value, since the product rule needs the old value.
+        for (size_t i=0; i < this->nvars(); i++){
+            (*this)[i] = detail::rules::Mul<T>::diff_rule(DP{this->true_value, (*this)[i]}, DP{arg.true_value, arg[i]});
+        }
+        this->true_value *= arg.true_value;
+        return *this;
+    }
+
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator*=(const Seed<T, NVARS, NORDER, Layout::Nested>& seed){
+        return *this = *this * seed;
+    }
+
+    template<detail::isScalarOperand<T> U>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator*=(const U& arg){
+        this->true_value *= arg;
+        for (size_t i=0; i < this->nvars(); i++){
+            (*this)[i] *= arg;
+        }
+        return *this;
+    }
+
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator/=(const Dual& arg){
+        format_nested(*this, arg);
+        using G = typename Base::grad_type;
+        using DP = DiffPair<const G&, const G&>;
+        // The gradient is updated before the value, since the quotient rule needs the old value.
+        for (size_t i=0; i < this->nvars(); i++){
+            (*this)[i] = detail::rules::Div<T>::diff_rule(DP{this->true_value, (*this)[i]}, DP{arg.true_value, arg[i]});
+        }
+        this->true_value /= arg.true_value;
+        return *this;
+    }
+
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator/=(const Seed<T, NVARS, NORDER, Layout::Nested>& seed){
+        return *this = *this / seed;
+    }
+
+    template<detail::isScalarOperand<T> U>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator/=(const U& arg){
+        this->true_value /= arg;
+        for (size_t i=0; i < this->nvars(); i++){
+            (*this)[i] /= arg;
+        }
+        return *this;
+    }
+
     operator T() const = delete; // Disable implicit conversion to T to avoid accidental loss of derivative information.
 
     [[nodiscard]]
@@ -427,68 +538,11 @@ private:
     template<typename U, size_t Nv, size_t Nord, Layout St>
     friend class Dual;   // every Dual is a friend
 
-    // The library internals that operate on the raw storage inherited from RecursiveDual and RecursiveDualBase (operator[] and true_value). Declared here because a friend of this class reaches the protected members of its bases through a Dual, exactly as a member would.
-    template<template<typename> typename RuleStruct, typename T2, size_t N2, size_t O2>
-    friend Dual<T2, N2, O2, Layout::Nested>& detail::unary_assign_impl(Dual<T2, N2, O2, Layout::Nested>& out, const Dual<T2, N2, O2, Layout::Nested>& arg);
+    friend struct detail::NestedDualOperationHelper;
 
-    template<template<typename> typename RuleStruct, typename T2, size_t N2, size_t O2>
-    friend Dual<T2, N2, O2, Layout::Nested>& detail::unary_assign_impl(Dual<T2, N2, O2, Layout::Nested>& out, const Seed<T2, N2, O2, Layout::Nested>& arg);
 
-    template<template<typename> typename RuleStruct, typename T2, size_t N2, size_t O2>
-    friend Dual<T2, N2, O2, Layout::Nested>& detail::binary_assign_impl(Dual<T2, N2, O2, Layout::Nested>& out, const Dual<T2, N2, O2, Layout::Nested>& a, const Dual<T2, N2, O2, Layout::Nested>& b);
 
-    template<template<typename> typename RuleStruct, typename T2, size_t N2, size_t O2>
-    friend Dual<T2, N2, O2, Layout::Nested>& detail::binary_assign_impl(Dual<T2, N2, O2, Layout::Nested>& out, const Seed<T2, N2, O2, Layout::Nested>& a, const Dual<T2, N2, O2, Layout::Nested>& b);
 
-    template<template<typename> typename RuleStruct, typename T2, size_t N2, size_t O2>
-    friend Dual<T2, N2, O2, Layout::Nested>& detail::binary_assign_impl(Dual<T2, N2, O2, Layout::Nested>& out, const Dual<T2, N2, O2, Layout::Nested>& a, const Seed<T2, N2, O2, Layout::Nested>& b);
-
-    template<template<typename> typename RuleStruct, typename T2, size_t N2, size_t O2>
-    friend Dual<T2, N2, O2, Layout::Nested>& detail::binary_assign_impl(Dual<T2, N2, O2, Layout::Nested>& out, const Seed<T2, N2, O2, Layout::Nested>& a, const Seed<T2, N2, O2, Layout::Nested>& b);
-
-    template<template<typename> typename RuleStruct, typename F2, typename T2, size_t N2, size_t O2>
-    requires (detail::isScalarOperand<F2, T2>)
-    friend Dual<T2, N2, O2, Layout::Nested>& detail::binary_assign_impl(Dual<T2, N2, O2, Layout::Nested>& out, const F2& a, const Dual<T2, N2, O2, Layout::Nested>& b);
-
-    template<template<typename> typename RuleStruct, typename F2, typename T2, size_t N2, size_t O2>
-    requires (detail::isScalarOperand<F2, T2>)
-    friend Dual<T2, N2, O2, Layout::Nested>& detail::binary_assign_impl(Dual<T2, N2, O2, Layout::Nested>& out, const Dual<T2, N2, O2, Layout::Nested>& a, const F2& b);
-
-    template<template<typename> typename RuleStruct, typename F2, typename T2, size_t N2, size_t O2>
-    requires (detail::isScalarOperand<F2, T2>)
-    friend Dual<T2, N2, O2, Layout::Nested>& detail::binary_assign_impl(Dual<T2, N2, O2, Layout::Nested>& out, const F2& a, const Seed<T2, N2, O2, Layout::Nested>& b);
-
-    template<template<typename> typename RuleStruct, typename F2, typename T2, size_t N2, size_t O2>
-    requires (detail::isScalarOperand<F2, T2>)
-    friend Dual<T2, N2, O2, Layout::Nested>& detail::binary_assign_impl(Dual<T2, N2, O2, Layout::Nested>& out, const Seed<T2, N2, O2, Layout::Nested>& a, const F2& b);
-
-    template<typename T2, size_t N2, size_t O2>
-    friend Dual<T2, N2, O2, Layout::Nested>& assign_compound_add(Dual<T2, N2, O2, Layout::Nested>& out, const Dual<T2, N2, O2, Layout::Nested>& arg);
-    template<typename T2, size_t N2, size_t O2>
-    friend Dual<T2, N2, O2, Layout::Nested>& assign_compound_add(Dual<T2, N2, O2, Layout::Nested>& out, const Seed<T2, N2, O2, Layout::Nested>& arg);
-    template<typename F2, typename T2, size_t N2, size_t O2>
-    requires (detail::isScalarOperand<F2, T2>)
-    friend Dual<T2, N2, O2, Layout::Nested>& assign_compound_add(Dual<T2, N2, O2, Layout::Nested>& out, const F2& arg);
-
-    template<typename T2, size_t N2, size_t O2>
-    friend Dual<T2, N2, O2, Layout::Nested>& assign_compound_sub(Dual<T2, N2, O2, Layout::Nested>& out, const Dual<T2, N2, O2, Layout::Nested>& arg);
-    template<typename T2, size_t N2, size_t O2>
-    friend Dual<T2, N2, O2, Layout::Nested>& assign_compound_sub(Dual<T2, N2, O2, Layout::Nested>& out, const Seed<T2, N2, O2, Layout::Nested>& arg);
-    template<typename F2, typename T2, size_t N2, size_t O2>
-    requires (detail::isScalarOperand<F2, T2>)
-    friend Dual<T2, N2, O2, Layout::Nested>& assign_compound_sub(Dual<T2, N2, O2, Layout::Nested>& out, const F2& arg);
-
-    template<typename T2, size_t N2, size_t O2>
-    friend Dual<T2, N2, O2, Layout::Nested>& assign_compound_mul(Dual<T2, N2, O2, Layout::Nested>& out, const Dual<T2, N2, O2, Layout::Nested>& arg);
-    template<typename F2, typename T2, size_t N2, size_t O2>
-    requires (detail::isScalarOperand<F2, T2>)
-    friend Dual<T2, N2, O2, Layout::Nested>& assign_compound_mul(Dual<T2, N2, O2, Layout::Nested>& out, const F2& arg);
-
-    template<typename T2, size_t N2, size_t O2>
-    friend Dual<T2, N2, O2, Layout::Nested>& assign_compound_div(Dual<T2, N2, O2, Layout::Nested>& out, const Dual<T2, N2, O2, Layout::Nested>& arg);
-    template<typename F2, typename T2, size_t N2, size_t O2>
-    requires (detail::isScalarOperand<F2, T2>)
-    friend Dual<T2, N2, O2, Layout::Nested>& assign_compound_div(Dual<T2, N2, O2, Layout::Nested>& out, const F2& arg);
 
     template<size_t NORD, std::integral First, std::integral... Int>
     XDIFF_INLINE_HOST_DEVICE

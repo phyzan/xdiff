@@ -192,200 +192,87 @@ struct OperandEvaluator;
 namespace xdiff{
 
 // ----------------------  Compound assignment operations ------------------------
-// +=
+// Each one forwards to the corresponding member operator, which owns the implementation and can
+// reach the storage directly. That is why none of these has to be a friend of Dual.
 
 template<typename T, size_t NVARS, size_t NORDER>
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_add(XDIFF_DUAL& out, const XDIFF_DUAL& arg){
-    for (size_t i=0; i < XDIFF_DUAL::Ntot; i++){
-        out[i] += arg[i];
-    }
-    return out;
+    return out += arg;
 }
 
 template<typename T, size_t NVARS, size_t NORDER>
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_add(XDIFF_DUAL& out, const XDIFF_SEED& arg){
-    // Index 0 holds the value and the first-order derivatives follow it, so the seed's unit
-    // derivative lands on 1 + axis. Every higher-order derivative of a seed is zero.
-    out[0] += arg.value();
-    out[1 + arg.axis()] += 1;
-    return out;
+    return out += arg;
 }
 
 template<typename F, typename T, size_t NVARS, size_t NORDER>
 requires (::xdiff::detail::isScalarOperand<F, T>)
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_add(XDIFF_DUAL& out, const F& arg){
-    out[0] += arg;   // adding a constant leaves every derivative untouched
-    return out;
+    return out += arg;
 }
 
-
-// -=
 
 template<typename T, size_t NVARS, size_t NORDER>
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_sub(XDIFF_DUAL& out, const XDIFF_DUAL& arg){
-    for (size_t i=0; i < XDIFF_DUAL::Ntot; i++){
-        out[i] -= arg[i];
-    }
-    return out;
+    return out -= arg;
 }
 
 template<typename T, size_t NVARS, size_t NORDER>
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_sub(XDIFF_DUAL& out, const XDIFF_SEED& arg){
-    // Index 0 holds the value and the first-order derivatives follow it, so the seed's unit
-    // derivative lands on 1 + axis. Every higher-order derivative of a seed is zero.
-    out[0] -= arg.value();
-    out[1 + arg.axis()] -= 1;
-    return out;
+    return out -= arg;
 }
 
 template<typename F, typename T, size_t NVARS, size_t NORDER>
 requires (::xdiff::detail::isScalarOperand<F, T>)
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_sub(XDIFF_DUAL& out, const F& arg){
-    out[0] -= arg;   // subtracting a constant leaves every derivative untouched
-    return out;
+    return out -= arg;
 }
 
-
-// *=
 
 template<typename T, size_t NVARS, size_t NORDER>
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_mul(XDIFF_DUAL& out, const XDIFF_DUAL& arg){
-    return out = out * arg;
+    return out *= arg;
 }
 
 template<typename T, size_t NVARS, size_t NORDER>
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_mul(XDIFF_DUAL& out, const XDIFF_SEED& arg){
-    return out = out * arg;
+    return out *= arg;
 }
 
 template<typename F, typename T, size_t NVARS, size_t NORDER>
 requires (::xdiff::detail::isScalarOperand<F, T>)
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_mul(XDIFF_DUAL& out, const F& arg){
-    for (size_t i=0; i < XDIFF_DUAL::Ntot; i++){
-        out[i] *= arg;
-    }
-    return out;
+    return out *= arg;
 }
 
-
-// /=
 
 template<typename T, size_t NVARS, size_t NORDER>
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_div(XDIFF_DUAL& out, const XDIFF_DUAL& arg){
-    return out = out / arg;
+    return out /= arg;
 }
 
 template<typename T, size_t NVARS, size_t NORDER>
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_div(XDIFF_DUAL& out, const XDIFF_SEED& arg){
-    return out = out / arg;
+    return out /= arg;
 }
 
 template<typename F, typename T, size_t NVARS, size_t NORDER>
 requires (::xdiff::detail::isScalarOperand<F, T>)
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_div(XDIFF_DUAL& out, const F& arg){
-    for (size_t i=0; i < XDIFF_DUAL::Ntot; i++){
-        out[i] /= arg;
-    }
-    return out;
+    return out /= arg;
 }
-
-
-
-// Operator overloads
-
-// operator +=
-template<typename T, size_t NVARS, size_t NORDER>
-XDIFF_INLINE_HOST_DEVICE
-XDIFF_DUAL& operator+=(XDIFF_DUAL& a, const XDIFF_DUAL& b){
-    return assign_compound_add(a, b);
-}
-
-template<typename T, size_t NVARS, size_t NORDER>
-XDIFF_INLINE_HOST_DEVICE
-XDIFF_DUAL& operator+=(XDIFF_DUAL& a, const XDIFF_SEED& b){
-    return assign_compound_add(a, b);
-}
-
-template<typename F, typename T, size_t NVARS, size_t NORDER>
-requires (::xdiff::detail::isScalarOperand<F, T>)
-XDIFF_INLINE_HOST_DEVICE
-XDIFF_DUAL& operator+=(XDIFF_DUAL& a, const F& b){
-    return assign_compound_add(a, b);
-}
-
-// operator -=
-template<typename T, size_t NVARS, size_t NORDER>
-XDIFF_INLINE_HOST_DEVICE
-XDIFF_DUAL& operator-=(XDIFF_DUAL& a, const XDIFF_DUAL& b){
-    return assign_compound_sub(a, b);
-}
-
-template<typename T, size_t NVARS, size_t NORDER>
-XDIFF_INLINE_HOST_DEVICE
-XDIFF_DUAL& operator-=(XDIFF_DUAL& a, const XDIFF_SEED& b){
-    return assign_compound_sub(a, b);
-}
-
-template<typename F, typename T, size_t NVARS, size_t NORDER>
-requires (::xdiff::detail::isScalarOperand<F, T>)
-XDIFF_INLINE_HOST_DEVICE
-XDIFF_DUAL& operator-=(XDIFF_DUAL& a, const F& b){
-    return assign_compound_sub(a, b);
-}
-
-// operator *=
-template<typename T, size_t NVARS, size_t NORDER>
-XDIFF_INLINE_HOST_DEVICE
-XDIFF_DUAL& operator*=(XDIFF_DUAL& a, const XDIFF_DUAL& b){
-    return assign_compound_mul(a, b);
-}
-
-template<typename T, size_t NVARS, size_t NORDER>
-XDIFF_INLINE_HOST_DEVICE
-XDIFF_DUAL& operator*=(XDIFF_DUAL& a, const XDIFF_SEED& b){
-    return assign_compound_mul(a, b);
-}
-
-template<typename F, typename T, size_t NVARS, size_t NORDER>
-requires (::xdiff::detail::isScalarOperand<F, T>)
-XDIFF_INLINE_HOST_DEVICE
-XDIFF_DUAL& operator*=(XDIFF_DUAL& a, const F& b){
-    return assign_compound_mul(a, b);
-}
-
-// operator /=
-template<typename T, size_t NVARS, size_t NORDER>
-XDIFF_INLINE_HOST_DEVICE
-XDIFF_DUAL& operator/=(XDIFF_DUAL& a, const XDIFF_DUAL& b){
-    return assign_compound_div(a, b);
-}
-
-template<typename T, size_t NVARS, size_t NORDER>
-XDIFF_INLINE_HOST_DEVICE
-XDIFF_DUAL& operator/=(XDIFF_DUAL& a, const XDIFF_SEED& b){
-    return assign_compound_div(a, b);
-}
-
-template<typename F, typename T, size_t NVARS, size_t NORDER>
-requires (::xdiff::detail::isScalarOperand<F, T>)
-XDIFF_INLINE_HOST_DEVICE
-XDIFF_DUAL& operator/=(XDIFF_DUAL& a, const F& b){
-    return assign_compound_div(a, b);
-}
-
-
 
 
 XDIFF_DEFINE_FLAT_DUAL_BINARY_OPERATION(operator+, assign_add, xdiff::detail::rules::Add)

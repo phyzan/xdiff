@@ -52,52 +52,7 @@ template<typename Derived, typename T, size_t NVARS, size_t NORDER>
 using GetRecursiveBase = typename RecursiveBaseHelper<Derived, T, NVARS, NORDER>::type;
 
 
-// Defined in operator_template.hpp, which is included at the end of this header. Declared here so that Dual can grant them raw access to its storage.
-
-// Dual -> Dual
-template<template<typename> typename RuleStruct, typename T, size_t NVARS, size_t NORDER>
-Dual<T, NVARS, NORDER, Layout::Nested>& unary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out, const Dual<T, NVARS, NORDER, Layout::Nested>& arg);
-
-// Seed -> Dual
-template<template<typename> typename RuleStruct, typename T, size_t NVARS, size_t NORDER>
-Dual<T, NVARS, NORDER, Layout::Nested>& unary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out, const Seed<T, NVARS, NORDER, Layout::Nested>& arg);
-
-// (Dual, Dual) -> Dual (binary operations)
-template<template<typename> typename RuleStruct, typename T, size_t NVARS, size_t NORDER>
-Dual<T, NVARS, NORDER, Layout::Nested>& binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out, const Dual<T, NVARS, NORDER, Layout::Nested>& a, const Dual<T, NVARS, NORDER, Layout::Nested>& b);
-
-// (Dual, Seed) -> Dual (binary operations)
-template<template<typename> typename RuleStruct, typename T, size_t NVARS, size_t NORDER>
-Dual<T, NVARS, NORDER, Layout::Nested>& binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out, const Dual<T, NVARS, NORDER, Layout::Nested>& a, const Seed<T, NVARS, NORDER, Layout::Nested>& b);
-
-// (Seed, Dual) -> Dual (binary operations)
-template<template<typename> typename RuleStruct, typename T, size_t NVARS, size_t NORDER>
-Dual<T, NVARS, NORDER, Layout::Nested>& binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out, const Seed<T, NVARS, NORDER, Layout::Nested>& a, const Dual<T, NVARS, NORDER, Layout::Nested>& b);
-
-// (Seed, Seed) -> Dual (binary operations)
-template<template<typename> typename RuleStruct, typename T, size_t NVARS, size_t NORDER>
-Dual<T, NVARS, NORDER, Layout::Nested>& binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out, const Seed<T, NVARS, NORDER, Layout::Nested>& a, const Seed<T, NVARS, NORDER, Layout::Nested>& b);
-
-// (F, Dual) -> Dual (binary operations)
-template<template<typename> typename RuleStruct, typename F, typename T, size_t NVARS, size_t NORDER>
-requires (isScalarOperand<F, T>)
-Dual<T, NVARS, NORDER, Layout::Nested>& binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out, const F& a, const Dual<T, NVARS, NORDER, Layout::Nested>& b);
-
-// (Dual, F) -> Dual (binary operations)
-template<template<typename> typename RuleStruct, typename F, typename T, size_t NVARS, size_t NORDER>
-requires (isScalarOperand<F, T>)
-Dual<T, NVARS, NORDER, Layout::Nested>& binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out, const Dual<T, NVARS, NORDER, Layout::Nested>& a, const F& b);
-
-// (F, Seed) -> Dual (binary operations)
-template<template<typename> typename RuleStruct, typename F, typename T, size_t NVARS, size_t NORDER>
-requires (isScalarOperand<F, T>)
-Dual<T, NVARS, NORDER, Layout::Nested>& binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out, const F& a, const Seed<T, NVARS, NORDER, Layout::Nested>& b);
-
-// (Seed, F) -> Dual (binary operations)
-template<template<typename> typename RuleStruct, typename F, typename T, size_t NVARS, size_t NORDER>
-requires (isScalarOperand<F, T>)
-Dual<T, NVARS, NORDER, Layout::Nested>& binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out, const Seed<T, NVARS, NORDER, Layout::Nested>& a, const F& b);
-
+struct NestedDualOperationHelper;
 
 } // namespace xdiff::detail
 
