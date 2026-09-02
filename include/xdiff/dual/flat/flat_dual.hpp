@@ -18,23 +18,23 @@
 namespace xdiff{
 
 
-template<typename T, size_t NVARS, size_t NORDER>
-requires (NVARS > 0)
+template<typename T, int NVARS, int NORDER>
 class Dual<T, NVARS, NORDER, Layout::Flat> : public DualBase<Dual<T, NVARS, NORDER, Layout::Flat>, T, NVARS, Layout::Flat>, public MultiDiff<NVARS, NORDER> {
+
+    static_assert(NVARS >= 0 && NORDER >= 0, "Flat Dual requires a compile-time known NVARS >= 0 and NORDER >= 0");
 
     using Base = DualBase<Dual<T, NVARS, NORDER, Layout::Flat>, T, NVARS, Layout::Flat>;
     using MDBase = MultiDiff<NVARS, NORDER>;
 public:
-    static constexpr size_t Nvars = NVARS;   ///< Number of independent variables
-    static constexpr size_t Norder = NORDER;   ///< Maximum derivative order
-    static constexpr size_t REDUCED_ORDER = NORDER > 0 ? NORDER-1 : 0;
+
+    static constexpr int REDUCED_ORDER = NORDER > 0 ? NORDER-1 : 0;
 
     /// Type after DiffCount differentiations
-    template<size_t DiffCount>
+    template<int DiffCount>
     using Reduced = Dual<T, NVARS, (NORDER > DiffCount ? NORDER-DiffCount : 0), Layout::Flat>;
 
     using ReducedType = Dual<T, NVARS, REDUCED_ORDER, Layout::Flat>;
-    using DataType = std::array<T, MultiDiff<NVARS, NORDER>::Ntot>; // internal storage
+    using DataType = std::array<T, MDBase::Ntot>; // internal storage
 
     // =========== Rule of 5 ===========
     XDIFF_INLINE_HOST_DEVICE
@@ -54,11 +54,16 @@ public:
     template<detail::isScalarOperand<T> U>
     XDIFF_INLINE_HOST_DEVICE
     explicit Dual(U&& value, MakeDual md = {.axis = -1, .nvars=NVARS, .order=NORDER}) : data_{} {
+
+        if (md.nvars != NVARS && md.nvars != -1) {
+            throw std::invalid_argument("nvars must be -1 or match NVARS for compile-time known number of variables in Dual");
+        } else if (md.order != NORDER && md.order != -1) {
+            throw std::invalid_argument("order must be -1 or match NORDER for compile-time known order in Dual");
+        } else if (md.axis < -1 || md.axis >= (md.nvars >= 0 ? md.nvars : NVARS)) {
+            throw std::invalid_argument("axis must be -1 or within the number of variables in Dual");
+        }
+
         data_[0] = std::forward<U>(value);
-        assert((md.nvars == NVARS || md.nvars == 0) && "nvars must match NVARS for compile-time known number of variables in Dual");
-        assert((md.order == NORDER || md.order == 0) && "order must match NORDER for compile-time known order in Dual");
-        assert(md.axis < int(NVARS) && "Axis index must be within the number of derivatives");
-        assert((NORDER > 0 || md.axis < 0) && "A Dual of order zero has no derivative to seed");
         if constexpr (NORDER > 0) {
             if (md.axis >= 0) {
                 data_[1 + md.axis] = 1;
@@ -83,10 +88,15 @@ public:
      * derivative, of every order, is zero. The seed's order is deduced rather than named,
      * because a Dual of order zero has no Seed to name.
      */
-    template<size_t No>
+    template<int seed_order>
     XDIFF_INLINE_HOST_DEVICE
-    Dual& operator=(const Seed<T, NVARS, No, Layout::Flat>& seed) {
-        assert(seed.nvars() == this->nvars() && "nvars must match NVARS when assigning a Seed to a Dual");
+    Dual& operator=(const Seed<T, NVARS, seed_order, Layout::Flat>& seed) {
+        // assert(seed.nvars() == this->nvars() && "nvars must match NVARS when assigning a Seed to a Dual");
+        if constexpr (NVARS == -1){
+            if (seed.nvars() != this->nvars()) {
+                throw std::invalid_argument("seed.nvars() must match this->nvars() when assigning a Seed to a Dual");
+            }
+        }
         *this = seed.value();
         if constexpr (NORDER > 0) {
             data_[1 + seed.axis()] = 1;
@@ -106,12 +116,15 @@ public:
         return *this;
     }
 
-    template<size_t No>
+    template<int seed_order>
     XDIFF_INLINE_HOST_DEVICE
-    Dual& operator+=(const Seed<T, NVARS, No, Layout::Flat>& seed){
+    Dual& operator+=(const Seed<T, NVARS, seed_order, Layout::Flat>& seed){
         // Index 0 holds the value and the first-order derivatives follow it, so the seed's unit
-        // derivative lands on 1 + axis. Every higher-order derivative of a seed is zero.
-        assert(seed.nvars() == this->nvars() && "nvars must match NVARS when adding a Seed to a Dual");
+        if constexpr (NVARS == -1){
+            if (seed.nvars() != this->nvars()) {
+                throw std::invalid_argument("seed.nvars() must match this->nvars() when adding a Seed to a Dual");
+            }
+        }
         data_[0] += seed.value();
         if constexpr (NORDER > 0) {
             data_[1 + seed.axis()] = data_[1 + seed.axis()] + 1;
@@ -134,10 +147,14 @@ public:
         return *this;
     }
 
-    template<size_t No>
+    template<int seed_order>
     XDIFF_INLINE_HOST_DEVICE
-    Dual& operator-=(const Seed<T, NVARS, No, Layout::Flat>& seed){
-        assert(seed.nvars() == this->nvars() && "nvars must match NVARS when subtracting a Seed from a Dual");
+    Dual& operator-=(const Seed<T, NVARS, seed_order, Layout::Flat>& seed){
+        if constexpr (NVARS == -1){
+            if (seed.nvars() != this->nvars()) {
+                throw std::invalid_argument("seed.nvars() must match this->nvars() when subtracting a Seed from a Dual");
+            }
+        }
         data_[0] -= seed.value();
         if constexpr (NORDER > 0) {
             data_[1 + seed.axis()] = data_[1 + seed.axis()] - 1;
@@ -157,9 +174,9 @@ public:
         return *this = *this * arg;
     }
 
-    template<size_t No>
+    template<int seed_order>
     XDIFF_INLINE_HOST_DEVICE
-    Dual& operator*=(const Seed<T, NVARS, No, Layout::Flat>& seed){
+    Dual& operator*=(const Seed<T, NVARS, seed_order, Layout::Flat>& seed){
         return *this = *this * seed;
     }
 
@@ -177,9 +194,9 @@ public:
         return *this = *this / arg;
     }
 
-    template<size_t No>
+    template<int seed_order>
     XDIFF_INLINE_HOST_DEVICE
-    Dual& operator/=(const Seed<T, NVARS, No, Layout::Flat>& seed){
+    Dual& operator/=(const Seed<T, NVARS, seed_order, Layout::Flat>& seed){
         return *this = *this / seed;
     }
 
@@ -201,13 +218,13 @@ public:
 
     XDIFF_INLINE_HOST_DEVICE
     constexpr size_t nvars() const {
-        return NVARS;
+        return size_t(NVARS);
     }
 
     [[nodiscard]]
     XDIFF_INLINE_HOST_DEVICE
     constexpr size_t order() const {
-        return NORDER;
+        return size_t(NORDER);
     }
 
 
@@ -316,14 +333,17 @@ public:
      * @tparam Norder The target Dual's order
      * @param dual The target Dual to assign to
      */
-    template<size_t Norder>
+    template<int order>
     XDIFF_INLINE_HOST_DEVICE
-    void assign_to(Dual<T, NVARS, Norder, Layout::Flat>& dual) const {
+    void assign_to(Dual<T, NVARS, order, Layout::Flat>& dual) const {
+        static_assert(order >= 0, "Order must be non-negative");
+        // NVARS is already non-negative
+
         // The number of variables must be the same, but the order can differ.
         // We copy all derivatives that are valid in the target dual.
-        constexpr size_t MIN_ORDER = std::min(Norder, NORDER);
-        constexpr size_t ELEM_COUNT = MultiDiff<NVARS, MIN_ORDER>::Ntot;
-        for (size_t i = 0; i < ELEM_COUNT; i++) {
+        constexpr int MIN_ORDER = std::min(order, NORDER);
+        constexpr int ELEM_COUNT = MultiDiff<NVARS, MIN_ORDER>::Ntot;
+        for (int i = 0; i < ELEM_COUNT; i++) {
             dual.data_[i] = data_[i];
         }
     }
@@ -353,10 +373,10 @@ public:
      * @return Array of offsets for extracting the reduced derivative
      */
     template<std::integral... Int>
-    requires (sizeof...(Int)<=NORDER)
     XDIFF_MAYBE_INLINE
     static constexpr auto offsets_for_reduced_diff(Int... x){
-        constexpr size_t NEW_ORDER = NORDER-static_cast<size_t>(sizeof...(x));
+        constexpr int NEW_ORDER = NORDER-sizeof...(x);
+        static_assert(NEW_ORDER >= 0, "Too many indices to differentiate wrt, resulting in negative new order.");
 
         std::array<size_t, Dual<T, NVARS, NEW_ORDER, Layout::Flat>::Ntot> res{};
         size_t n = 0;
@@ -375,7 +395,7 @@ public:
                         }
                     );
                 }.template operator()<Ord>(), ...);
-            }(std::make_index_sequence<NEW_ORDER+1UL>{});
+            }(std::make_index_sequence<NEW_ORDER+1>{});
         };
 
         call_it(std::make_index_sequence<NVARS>{});
@@ -428,7 +448,7 @@ protected:
 
 private:
 
-    template<typename U, size_t M, size_t P, Layout LY>
+    template<typename U, int M, int P, Layout LY>
     friend class Dual;   // every Dual is a friend
 
     DataType data_;
@@ -444,7 +464,7 @@ struct HelperBaseOperandEvaluator{
 
     using T = typename STRUCT::value_type;
 
-    template<size_t Nvars, size_t Norder, typename... U>
+    template<int Nvars, int Norder, typename... U>
     XDIFF_MAYBE_INLINE
     static Dual<T, Nvars, Norder, Layout::Flat>& optimized_eval(Dual<T, Nvars, Norder, Layout::Flat>& out, const U&... f){
         using EV = Evaluator<Nvars, Norder>;
@@ -452,22 +472,27 @@ struct HelperBaseOperandEvaluator{
 
         // Compute the function value
         T v = STRUCT::operation(EV::get_value(f)...);
-        out = AD(v);
 
-        if constexpr (Norder > 0) {
+        if constexpr (!(Norder > 0 && Nvars > 0)) {
+            out = AD(v);
+        }
+
+        if constexpr (Norder > 0 && Nvars > 0) {
             using RT = typename AD::ReducedType;
 
             // Compute derivative w.r.t. each variable using the diff_rule
             auto q = [&] XDIFF_DEVICE <size_t I> (auto&&... g) XDIFF_ALWAYS_INLINE {
-                return STRUCT::diff_rule(DiffPair{EV::reduced_value(g), EV::template reduced_diff<I>(g)}...);
+                return RT(STRUCT::diff_rule(DiffPair{EV::reduced_value(g), EV::template reduced_diff<I>(g)}...));
             };
 
             // h[i] contains df/dx_i and all its higher derivatives. The explicit conversion is
             // needed because a rule applied to seed variables alone reduces to a bare scalar:
             // a seed's derivative is the constant 1, so no reduced Dual has to be materialized.
             auto h = XDIFF_EXPAND(Nvars, I,
-                return std::array<RT, Nvars>{RT(q.template operator()<I>(f...))...};
+                return std::array<RT, Nvars>{q.template operator()<I>(f...)...};
             );
+
+            out = AD(v);
 
             size_t n = 1;
 
@@ -499,7 +524,7 @@ struct HelperBaseOperandEvaluator{
      * Provides utilities for extracting values and derivatives from
      * different argument types (Dual, Expr, or scalar).
      */
-    template<size_t Nvars, size_t Norder>
+    template<int Nvars, int Norder>
     struct Evaluator {
         using AD = Dual<T, Nvars, Norder, Layout::Flat>;
 
@@ -513,7 +538,7 @@ struct HelperBaseOperandEvaluator{
         }
 
         /// @brief Extracts the scalar value from a Seed.
-        template<size_t Nv, size_t No>
+        template<int Nv, int No>
         XDIFF_INLINE_DEVICE
         static const T& get_value(const Seed<T, Nv, No, Layout::Flat>& f) {
             return f.value();
@@ -528,14 +553,14 @@ struct HelperBaseOperandEvaluator{
         }
 
         /// @brief Gets the reduced-order representation of a Dual.
-        template<size_t Nv, size_t No>
+        template<int Nv, int No>
         XDIFF_INLINE_DEVICE
         static decltype(auto) reduced_value(const Dual<T, Nv, No, Layout::Flat>& f){
             return f.trimmed();
         }
 
         /// @brief Gets the reduced-order representation of a Seed.
-        template<size_t Nv, size_t No>
+        template<int Nv, int No>
         XDIFF_INLINE_DEVICE
         static decltype(auto) reduced_value(const Seed<T, Nv, No, Layout::Flat>& f){
             return f.trimmed();
@@ -557,7 +582,7 @@ struct HelperBaseOperandEvaluator{
 
         /// @brief Gets the reduced derivative w.r.t. variable I from a Seed. A seed variable
         /// differentiates to the constant 1 along its own axis, and to 0 along every other.
-        template<size_t I, size_t Nv, size_t No>
+        template<size_t I, int Nv, int No>
         XDIFF_INLINE_DEVICE
         static auto reduced_diff(const Seed<T, Nv, No, Layout::Flat>& f){
             return (f.axis() == I ? 1 : 0);
@@ -579,7 +604,7 @@ struct BaseOperandEvaluator : public HelperBaseOperandEvaluator<STRUCT>{};
 
 
 
-template<size_t Norder, size_t Nvars>
+template<int Norder, int Nvars>
 struct LeibnizDiff{
 
     static constexpr size_t NDIFFS = xdiff::tools::comb(Nvars+Norder, Norder);
@@ -687,9 +712,9 @@ struct BaseOperandEvaluator<rules::Mul<T>> : public HelperBaseOperandEvaluator<r
 #ifdef XDIFF_LEIBNIZ_OPT
     using Base::optimized_eval; //use all overloads from Base, but override the next one
 
-    template<size_t NVARS, size_t NORDER>
+    template<int NVARS, int NORDER>
     XDIFF_INLINE_HOST_DEVICE
-    static XDIFF_DUAL& optimized_eval(XDIFF_DUAL& out, const XDIFF_DUAL& f, const XDIFF_DUAL& g){
+    static XDIFF_DUAL& leibniz_eval(XDIFF_DUAL& out, const XDIFF_DUAL& f, const XDIFF_DUAL& g){
         using Cache = LeibnizDiff<NORDER, NVARS>;
 
         size_t n=0;
@@ -705,9 +730,21 @@ struct BaseOperandEvaluator<rules::Mul<T>> : public HelperBaseOperandEvaluator<r
 
         return out;
     }
+
+    template<int NVARS, int NORDER>
+    XDIFF_INLINE_HOST_DEVICE
+    static XDIFF_DUAL& optimized_eval(XDIFF_DUAL& out, const XDIFF_DUAL& f, const XDIFF_DUAL& g){
+        if (&out == &f || &out == &g){
+            XDIFF_DUAL tmp;
+            leibniz_eval<NVARS, NORDER>(tmp, f, g);
+            out = tmp;
+            return out;
+        }
+        return leibniz_eval<NVARS, NORDER>(out, f, g);
+    }
 #endif // XDIFF_LEIBNIZ_OPT
 
-    template<size_t ORDER, size_t Norder, size_t Nvars>
+    template<size_t ORDER, int Norder, int Nvars>
     XDIFF_INLINE_HOST_DEVICE static void apply_diffs(Dual<T, Nvars, Norder, Layout::Flat>& res, const Dual<T, Nvars, Norder, Layout::Flat>& f, const Dual<T, Nvars, Norder, Layout::Flat>& g){
         static_assert(ORDER<=Norder, "ORDER too large");
         constexpr size_t glf = Dual<T, Nvars, Norder, Layout::Flat>::global_offset(ORDER);
@@ -728,7 +765,7 @@ struct BaseOperandEvaluator<rules::Mul<T>> : public HelperBaseOperandEvaluator<r
      * @param order Per-variable derivative counts.
      * @return The derivative value at the specified multi-index.
      */
-    template<size_t Norder, size_t Nvars, std::integral... IntType>
+    template<int Norder, int Nvars, std::integral... IntType>
     XDIFF_INLINE_HOST_DEVICE static T diff_element(const Dual<T, Nvars, Norder, Layout::Flat>& f, const Dual<T, Nvars, Norder, Layout::Flat>& g, IntType... order){
         T res{0};
         auto func = [&] XDIFF_DEVICE (auto... dummy_order) XDIFF_LAMBDA_INLINE {
@@ -751,7 +788,7 @@ struct OperandEvaluator<rules::Add<T>> : public BaseOperandEvaluator<rules::Add<
     using Base = BaseOperandEvaluator<rules::Add<T>>;
     using Base::optimized_eval;   // generic fallback for operands the fast paths below exclude
 
-    template<size_t NVARS, size_t NORDER>
+    template<int NVARS, int NORDER>
     XDIFF_INLINE_HOST_DEVICE
     static XDIFF_DUAL& optimized_eval(XDIFF_DUAL& out, const XDIFF_DUAL& f, const XDIFF_DUAL& g){
         for (size_t i=0; i<XDIFF_DUAL::Ntot; i++){
@@ -760,7 +797,7 @@ struct OperandEvaluator<rules::Add<T>> : public BaseOperandEvaluator<rules::Add<
         return out;
     }
 
-    template<typename U, size_t NVARS, size_t NORDER>
+    template<typename U, int NVARS, int NORDER>
     requires (isScalarOperand<U, T>)
     XDIFF_INLINE_HOST_DEVICE
     static XDIFF_DUAL& optimized_eval(XDIFF_DUAL& out, const XDIFF_DUAL& f, const U& g){
@@ -771,7 +808,7 @@ struct OperandEvaluator<rules::Add<T>> : public BaseOperandEvaluator<rules::Add<
         return out;
     }
 
-    template<typename U, size_t NVARS, size_t NORDER>
+    template<typename U, int NVARS, int NORDER>
     requires (isScalarOperand<U, T>)
     XDIFF_INLINE_HOST_DEVICE
     static XDIFF_DUAL& optimized_eval(XDIFF_DUAL& out, const U& f, const XDIFF_DUAL& g){
@@ -790,7 +827,7 @@ struct OperandEvaluator<rules::Sub<T>> : public BaseOperandEvaluator<rules::Sub<
     using Base = BaseOperandEvaluator<rules::Sub<T>>;
     using Base::optimized_eval;   // generic fallback for operands the fast paths below exclude
 
-    template<size_t NVARS, size_t NORDER>
+    template<int NVARS, int NORDER>
     XDIFF_INLINE_HOST_DEVICE
     static XDIFF_DUAL& optimized_eval(XDIFF_DUAL& out, const XDIFF_DUAL& f, const XDIFF_DUAL& g){
         for (size_t i=0; i<XDIFF_DUAL::Ntot; i++){
@@ -799,7 +836,7 @@ struct OperandEvaluator<rules::Sub<T>> : public BaseOperandEvaluator<rules::Sub<
         return out;
     }
 
-    template<typename U, size_t NVARS, size_t NORDER>
+    template<typename U, int NVARS, int NORDER>
     requires (isScalarOperand<U, T>)
     XDIFF_INLINE_HOST_DEVICE
     static XDIFF_DUAL& optimized_eval(XDIFF_DUAL& out, const XDIFF_DUAL& f, const U& g){
@@ -810,7 +847,7 @@ struct OperandEvaluator<rules::Sub<T>> : public BaseOperandEvaluator<rules::Sub<
         return out;
     }
 
-    template<typename U, size_t NVARS, size_t NORDER>
+    template<typename U, int NVARS, int NORDER>
     requires (isScalarOperand<U, T>)
     XDIFF_INLINE_HOST_DEVICE
     static XDIFF_DUAL& optimized_eval(XDIFF_DUAL& out, const U& f, const XDIFF_DUAL& g){
@@ -829,13 +866,13 @@ struct OperandEvaluator<rules::Mul<T>> : public BaseOperandEvaluator<rules::Mul<
     using Base = BaseOperandEvaluator<rules::Mul<T>>;
     using Base::optimized_eval;   // generic fallback for operands the fast paths below exclude
 
-    template<size_t NVARS, size_t NORDER>
+    template<int NVARS, int NORDER>
     XDIFF_INLINE_HOST_DEVICE
     static XDIFF_DUAL& optimized_eval(XDIFF_DUAL& out, const XDIFF_DUAL& f, const XDIFF_DUAL& g){
         return Base::optimized_eval(out, f, g);
     }
 
-    template<typename U, size_t NVARS, size_t NORDER>
+    template<typename U, int NVARS, int NORDER>
     requires (isScalarOperand<U, T>)
     XDIFF_INLINE_HOST_DEVICE
     static XDIFF_DUAL& optimized_eval(XDIFF_DUAL& out, const XDIFF_DUAL& f, const U& g){
@@ -845,7 +882,7 @@ struct OperandEvaluator<rules::Mul<T>> : public BaseOperandEvaluator<rules::Mul<
         return out;
     }
 
-    template<typename U, size_t NVARS, size_t NORDER>
+    template<typename U, int NVARS, int NORDER>
     requires (isScalarOperand<U, T>)
     XDIFF_INLINE_HOST_DEVICE
     static XDIFF_DUAL& optimized_eval(XDIFF_DUAL& out, const U& f, const XDIFF_DUAL& g){
@@ -863,13 +900,13 @@ struct OperandEvaluator<rules::Div<T>> : public BaseOperandEvaluator<rules::Div<
     using Base = BaseOperandEvaluator<rules::Div<T>>;
     using Base::optimized_eval;   // generic fallback for operands the fast paths below exclude
 
-    template<size_t NVARS, size_t NORDER>
+    template<int NVARS, int NORDER>
     XDIFF_INLINE_HOST_DEVICE
     static XDIFF_DUAL& optimized_eval(XDIFF_DUAL& out, const XDIFF_DUAL& f, const XDIFF_DUAL& g){
         return Base::optimized_eval(out, f, g);
     }
 
-    template<typename U, size_t NVARS, size_t NORDER>
+    template<typename U, int NVARS, int NORDER>
     requires (isScalarOperand<U, T>)
     XDIFF_INLINE_HOST_DEVICE
     static XDIFF_DUAL& optimized_eval(XDIFF_DUAL& out, const XDIFF_DUAL& f, const U& g){
@@ -879,7 +916,7 @@ struct OperandEvaluator<rules::Div<T>> : public BaseOperandEvaluator<rules::Div<
         return out;
     }
 
-    template<typename U, size_t NVARS, size_t NORDER>
+    template<typename U, int NVARS, int NORDER>
     requires (isScalarOperand<U, T>)
     XDIFF_INLINE_HOST_DEVICE
     static XDIFF_DUAL& optimized_eval(XDIFF_DUAL& out, const U& f, const XDIFF_DUAL& g){

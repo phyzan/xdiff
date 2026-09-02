@@ -5,6 +5,7 @@
 #include "../tools.hpp"
 #include <cstdint>
 #include <ostream>
+#include <stdexcept>
 
 #define XDIFF_DUAL Dual<T, NVARS, NORDER, LY>
 #define XDIFF_SEED Seed<T, NVARS, NORDER, LY>
@@ -18,27 +19,23 @@ enum class Layout : uint8_t {
     Nested
 };
 
-template<typename Derived, typename T, size_t NVARS, Layout LY>
+template<typename Derived, typename T, int NVARS, Layout LY>
 class DualBase;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 class Dual;
 
 
-
-// For "nvars" and "order", the zero value is used for the default runtime number (for dynamic number of nvars or order) or compile-time number of variables and order, respectively.
-// For example, if the compile time of nvars is 3, then passing nvars = 0 will use the compile-time value of 3, and no assertion error will be thrown. If the compile time of nvars is 0 (dynamic number of variables), then passing nvars = 0 will use the default runtime number of variables, and no assertion error will be thrown.
-// An assertion error is thrown when the compile-time number of variables "NVARS" is non-zero and the passed nvars is non-zero but different for NVARS. The same applies to the "order" parameter.
 struct MakeDual{
-    int axis = -1;
-    size_t nvars = 0;
-    size_t order = 0;
+    int axis = -1; // no axis by default
+    int nvars = -1; // chooses default
+    int order = -1; // chooses default
 };
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 class SeedVector;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 class Seed;
 
 
@@ -105,7 +102,7 @@ DiffPair(F&&, DF&&)
 >;
 
 
-template<typename Derived, typename T, size_t NVARS, Layout LY>
+template<typename Derived, typename T, int NVARS, Layout LY>
 class DualBase {
 
 public:
@@ -128,310 +125,310 @@ public:
 // ----------------------  Unary operations ------------------------
 
 // +Dual
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_pos(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_pos(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
 
 // -Dual
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_neg(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_neg(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
 
 // abs(Dual)
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_abs(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_abs(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
 
 // log(Dual)
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_log(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_log(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
 
 // log10(Dual)
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_log10(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_log10(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
 
 // exp(Dual)
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_exp(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_exp(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
 
 // sqrt(Dual)
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sqrt(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sqrt(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
 // sin(Dual)
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sin(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sin(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
 
 // cos(Dual)
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_cos(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_cos(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
 
 // tan(Dual)
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_tan(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
     
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_tan(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
 
 // cot(Dual)
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_cot(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_cot(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
 
 // sec(Dual)
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sec(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sec(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
 
 // csc(Dual)
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_csc(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_csc(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
 
 // asin(Dual)
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_asin(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_asin(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
 
 // acos(Dual)
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_acos(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_acos(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
 
 // atan(Dual)
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_atan(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_atan(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
 
 // acot(Dual)
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_acot(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_acot(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
 
 // asec(Dual)
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_asec(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_asec(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
 
 // acsc(Dual)
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_acsc(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_acsc(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
 
 // sinh(Dual)
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sinh(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sinh(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
 
 // cosh(Dual)
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_cosh(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_cosh(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
 
 // tanh(Dual)
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_tanh(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_tanh(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
 
 // erf(Dual)
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_erf(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_erf(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
 
 // ----------------------  Binary operations ------------------------
 
 
 // Addition
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_add(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_add(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_add(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_add(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_add(XDIFF_DUAL& /*out*/, const F& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_add(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_add(XDIFF_DUAL& /*out*/, const F& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_add(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
 // Subtraction
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sub(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sub(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sub(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sub(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sub(XDIFF_DUAL& /*out*/, const F& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sub(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sub(XDIFF_DUAL& /*out*/, const F& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_sub(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
 // Multiplication
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_mul(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_mul(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_mul(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_mul(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_mul(XDIFF_DUAL& /*out*/, const F& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_mul(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_mul(XDIFF_DUAL& /*out*/, const F& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_mul(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
 // Division
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_div(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_div(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_div(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_div(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_div(XDIFF_DUAL& /*out*/, const F& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_div(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_div(XDIFF_DUAL& /*out*/, const F& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_div(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
 // Power
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_pow(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_pow(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_pow(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_pow(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_pow(XDIFF_DUAL& /*out*/, const F& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_pow(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_pow(XDIFF_DUAL& /*out*/, const F& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_pow(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
@@ -440,46 +437,46 @@ XDIFF_HOST_DEVICE XDIFF_DUAL& assign_pow(XDIFF_DUAL& /*out*/, const XDIFF_SEED& 
 
 
 // Addition
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_add(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_add(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_add(XDIFF_DUAL& /*out*/, const F& /*arg*/) XDIFF_NO_DEF;
 
 // Subtraction
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_sub(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_sub(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_sub(XDIFF_DUAL& /*out*/, const F& /*arg*/) XDIFF_NO_DEF;
 
 // Multiplication
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_mul(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_mul(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_mul(XDIFF_DUAL& /*out*/, const F& /*arg*/) XDIFF_NO_DEF;
 
 // Division
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_div(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_div(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_div(XDIFF_DUAL& /*out*/, const F& /*arg*/) XDIFF_NO_DEF;
 
@@ -489,161 +486,161 @@ XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_div(XDIFF_DUAL& /*out*/, const F& 
 // -------------------------------- Operator overloads --------------------------------
 
 // Unary +
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL operator+(const XDIFF_DUAL& /*a*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL operator+(const XDIFF_SEED& /*a*/) XDIFF_NO_DEF;
 
 // Unary -
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL operator-(const XDIFF_DUAL& /*a*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL operator-(const XDIFF_SEED& /*a*/) XDIFF_NO_DEF;
 
 // Addition
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL operator+(const XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL operator+(const XDIFF_DUAL& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL operator+(const XDIFF_SEED& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL operator+(const XDIFF_SEED& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL operator+(const XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL operator+(const F& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL operator+(const XDIFF_SEED& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL operator+(const F& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
 // Subtraction
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL operator-(const XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL operator-(const XDIFF_DUAL& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL operator-(const XDIFF_SEED& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL operator-(const XDIFF_SEED& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL operator-(const XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL operator-(const F& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL operator-(const XDIFF_SEED& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL operator-(const F& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
 // Multiplication
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL operator*(const XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL operator*(const XDIFF_DUAL& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL operator*(const XDIFF_SEED& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL operator*(const XDIFF_SEED& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL operator*(const XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL operator*(const F& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL operator*(const XDIFF_SEED& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL operator*(const F& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
 // Division
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL operator/(const XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL operator/(const XDIFF_DUAL& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL operator/(const XDIFF_SEED& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL operator/(const XDIFF_SEED& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL operator/(const XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL operator/(const F& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL operator/(const XDIFF_SEED& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL operator/(const F& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
 // Power
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL pow(const XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL pow(const XDIFF_DUAL& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL pow(const XDIFF_SEED& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL pow(const XDIFF_SEED& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL pow(const XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL pow(const F& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL pow(const XDIFF_SEED& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL pow(const F& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
@@ -670,135 +667,135 @@ XDIFF_HOST_DEVICE XDIFF_DUAL pow(const F& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_
 // -------------------------------- Comparison operator overloads --------------------------------
 
 // ==
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE bool operator==(const XDIFF_DUAL& a, const XDIFF_DUAL& b){
     return a.value() == b.value();
 }
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE bool operator==(const XDIFF_DUAL& a, const XDIFF_SEED& b){
     return a.value() == b.value();
 }
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE bool operator==(const XDIFF_SEED& a, const XDIFF_DUAL& b){
     return a.value() == b.value();
 }
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE bool operator==(const XDIFF_SEED& a, const XDIFF_SEED& b){
     return a.value() == b.value();
 }
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE bool operator==(const XDIFF_DUAL& a, const F& b){
     return a.value() == b;
 }
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE bool operator==(const F& a, const XDIFF_DUAL& b){
     return a == b.value();
 }
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE bool operator==(const XDIFF_SEED& a, const F& b){
     return a.value() == b;
 }
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE bool operator==(const F& a, const XDIFF_SEED& b){
     return a == b.value();
 }
 
 // !=
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE bool operator!=(const XDIFF_DUAL& a, const XDIFF_DUAL& b){
     return a.value() != b.value();
 }
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE bool operator!=(const XDIFF_DUAL& a, const XDIFF_SEED& b){
     return a.value() != b.value();
 }
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE bool operator!=(const XDIFF_SEED& a, const XDIFF_DUAL& b){
     return a.value() != b.value();
 }
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE bool operator!=(const XDIFF_SEED& a, const XDIFF_SEED& b){
     return a.value() != b.value();
 }
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE bool operator!=(const XDIFF_DUAL& a, const F& b){
     return a.value() != b;
 }
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE bool operator!=(const F& a, const XDIFF_DUAL& b){
     return a != b.value();
 }
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE bool operator!=(const XDIFF_SEED& a, const F& b){
     return a.value() != b;
 }
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE bool operator!=(const F& a, const XDIFF_SEED& b){
     return a != b.value();
 }
 
 // <
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE bool operator<(const XDIFF_DUAL& a, const XDIFF_DUAL& b){
     return a.value() < b.value();
 }
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE bool operator<(const XDIFF_DUAL& a, const XDIFF_SEED& b){
     return a.value() < b.value();
 }
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE bool operator<(const XDIFF_SEED& a, const XDIFF_DUAL& b){
     return a.value() < b.value();
 }
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE bool operator<(const XDIFF_SEED& a, const XDIFF_SEED& b){
     return a.value() < b.value();
 }
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE bool operator<(const XDIFF_DUAL& a, const F& b){
     return a.value() < b;
 }
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE bool operator<(const F& a, const XDIFF_DUAL& b){
     return a < b.value();
 }
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE bool operator<(const XDIFF_SEED& a, const F& b){
     return a.value() < b;
 }
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE bool operator<(const F& a, const XDIFF_SEED& b){
     return a < b.value();
@@ -806,135 +803,135 @@ XDIFF_HOST_DEVICE bool operator<(const F& a, const XDIFF_SEED& b){
 
 
 // >
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE bool operator>(const XDIFF_DUAL& a, const XDIFF_DUAL& b){
     return a.value() > b.value();
 }
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE bool operator>(const XDIFF_DUAL& a, const XDIFF_SEED& b){
     return a.value() > b.value();
 }
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE bool operator>(const XDIFF_SEED& a, const XDIFF_DUAL& b){
     return a.value() > b.value();
 }
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE bool operator>(const XDIFF_SEED& a, const XDIFF_SEED& b){
     return a.value() > b.value();
 }
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE bool operator>(const XDIFF_DUAL& a, const F& b){
     return a.value() > b;
 }
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE bool operator>(const F& a, const XDIFF_DUAL& b){
     return a > b.value();
 }
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE bool operator>(const XDIFF_SEED& a, const F& b){
     return a.value() > b;
 }
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE bool operator>(const F& a, const XDIFF_SEED& b){
     return a > b.value();
 }
 
 // <=
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE bool operator<=(const XDIFF_DUAL& a, const XDIFF_DUAL& b){
     return a.value() <= b.value();
 }
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE bool operator<=(const XDIFF_DUAL& a, const XDIFF_SEED& b){
     return a.value() <= b.value();
 }
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE bool operator<=(const XDIFF_SEED& a, const XDIFF_DUAL& b){
     return a.value() <= b.value();
 }
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE bool operator<=(const XDIFF_SEED& a, const XDIFF_SEED& b){
     return a.value() <= b.value();
 }
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE bool operator<=(const XDIFF_DUAL& a, const F& b){
     return a.value() <= b;
 }
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE bool operator<=(const F& a, const XDIFF_DUAL& b){
     return a <= b.value();
 }
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE bool operator<=(const XDIFF_SEED& a, const F& b){
     return a.value() <= b;
 }
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE bool operator<=(const F& a, const XDIFF_SEED& b){
     return a <= b.value();
 }
 
 // >=
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE bool operator>=(const XDIFF_DUAL& a, const XDIFF_DUAL& b){
     return a.value() >= b.value();
 }
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE bool operator>=(const XDIFF_DUAL& a, const XDIFF_SEED& b){
     return a.value() >= b.value();
 }
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE bool operator>=(const XDIFF_SEED& a, const XDIFF_DUAL& b){
     return a.value() >= b.value();
 }
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE bool operator>=(const XDIFF_SEED& a, const XDIFF_SEED& b){
     return a.value() >= b.value();
 }
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE bool operator>=(const XDIFF_DUAL& a, const F& b){
     return a.value() >= b;
 }
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE bool operator>=(const F& a, const XDIFF_DUAL& b){
     return a >= b.value();
 }
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE bool operator>=(const XDIFF_SEED& a, const F& b){
     return a.value() >= b;
 }
 
-template<typename F, typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE bool operator>=(const F& a, const XDIFF_SEED& b){
     return a >= b.value();
@@ -943,13 +940,13 @@ XDIFF_HOST_DEVICE bool operator>=(const F& a, const XDIFF_SEED& b){
 
 
 // -------------------------------- Stream operator overload --------------------------------
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_FORCEINLINE
 std::ostream& operator<<(std::ostream& os, const XDIFF_DUAL& a){
     return os << a.value();
 }
 
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_FORCEINLINE
 std::ostream& operator<<(std::ostream& os, const XDIFF_SEED& a){
     return os << a.value();
@@ -974,7 +971,7 @@ namespace std {
  * Inherits from numeric_limits<T> and wraps the limit values in Dual objects.
  * This enables Dual to work with algorithms that query numeric limits.
  */
-template<typename T, size_t NVARS, size_t NORDER, xdiff::Layout LY>
+template<typename T, int NVARS, int NORDER, xdiff::Layout LY>
 class numeric_limits<xdiff::XDIFF_DUAL> : public numeric_limits<T>{
 public:
 
@@ -1016,13 +1013,13 @@ public:
 };
 
 /// @brief Checks if a Dual's value is finite.
-template<typename T, size_t NVARS, size_t NORDER, xdiff::Layout LY>
+template<typename T, int NVARS, int NORDER, xdiff::Layout LY>
 bool isfinite(const xdiff::XDIFF_DUAL& x){
     return isfinite(x.value());
 }
 
 /// @brief Checks if a Dual's value is finite.
-template<typename T, size_t NVARS, size_t NORDER, xdiff::Layout LY>
+template<typename T, int NVARS, int NORDER, xdiff::Layout LY>
 bool isfinite(const xdiff::XDIFF_SEED& x){
     return isfinite(x.value());
 }

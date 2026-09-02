@@ -108,7 +108,7 @@ int main(int argc, char *argv[]){
     }
 
     {
-        using D = Dual<T, 0, 2, Layout::Nested>;
+        using D = Dual<T, -1, 2, Layout::Nested>;
         D x(1.0, MakeDual{.axis = 0, .nvars = 3});
         D y(2.0, MakeDual{.axis = 1, .nvars = 3});
         D z(3.0, MakeDual{.axis = 2, .nvars = 3});
@@ -116,7 +116,7 @@ int main(int argc, char *argv[]){
     }
 
     {
-        using D = lazy::LazyType<Dual<T, 0, 2, Layout::Nested>>;
+        using D = lazy::LazyType<Dual<T, -1, 2, Layout::Nested>>;
         D x(1.0, MakeDual{.axis = 0, .nvars = 3});
         D y(2.0, MakeDual{.axis = 1, .nvars = 3});
         D z(3.0, MakeDual{.axis = 2, .nvars = 3});

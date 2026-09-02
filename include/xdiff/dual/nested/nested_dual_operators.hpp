@@ -15,19 +15,19 @@ namespace xdiff{
 // Each one forwards to the corresponding member operator, which owns the implementation and can
 // reach the storage directly. That is why none of these has to be a friend of Dual.
 
-template<typename T, size_t NVARS, size_t NORDER>
+template<typename T, int NVARS, int NORDER>
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_add(XDIFF_DUAL& out, const XDIFF_DUAL& arg){
     return out += arg;
 }
 
-template<typename T, size_t NVARS, size_t NORDER>
+template<typename T, int NVARS, int NORDER>
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_add(XDIFF_DUAL& out, const XDIFF_SEED& arg){
     return out += arg;
 }
 
-template<typename F, typename T, size_t NVARS, size_t NORDER>
+template<typename F, typename T, int NVARS, int NORDER>
 requires (::xdiff::detail::isScalarOperand<F, T>)
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_add(XDIFF_DUAL& out, const F& arg){
@@ -35,19 +35,19 @@ XDIFF_DUAL& assign_compound_add(XDIFF_DUAL& out, const F& arg){
 }
 
 
-template<typename T, size_t NVARS, size_t NORDER>
+template<typename T, int NVARS, int NORDER>
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_sub(XDIFF_DUAL& out, const XDIFF_DUAL& arg){
     return out -= arg;
 }
 
-template<typename T, size_t NVARS, size_t NORDER>
+template<typename T, int NVARS, int NORDER>
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_sub(XDIFF_DUAL& out, const XDIFF_SEED& arg){
     return out -= arg;
 }
 
-template<typename F, typename T, size_t NVARS, size_t NORDER>
+template<typename F, typename T, int NVARS, int NORDER>
 requires (::xdiff::detail::isScalarOperand<F, T>)
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_sub(XDIFF_DUAL& out, const F& arg){
@@ -55,19 +55,19 @@ XDIFF_DUAL& assign_compound_sub(XDIFF_DUAL& out, const F& arg){
 }
 
 
-template<typename T, size_t NVARS, size_t NORDER>
+template<typename T, int NVARS, int NORDER>
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_mul(XDIFF_DUAL& out, const XDIFF_DUAL& arg){
     return out *= arg;
 }
 
-template<typename T, size_t NVARS, size_t NORDER>
+template<typename T, int NVARS, int NORDER>
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_mul(XDIFF_DUAL& out, const XDIFF_SEED& arg){
     return out *= arg;
 }
 
-template<typename F, typename T, size_t NVARS, size_t NORDER>
+template<typename F, typename T, int NVARS, int NORDER>
 requires (::xdiff::detail::isScalarOperand<F, T>)
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_mul(XDIFF_DUAL& out, const F& arg){
@@ -75,19 +75,19 @@ XDIFF_DUAL& assign_compound_mul(XDIFF_DUAL& out, const F& arg){
 }
 
 
-template<typename T, size_t NVARS, size_t NORDER>
+template<typename T, int NVARS, int NORDER>
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_div(XDIFF_DUAL& out, const XDIFF_DUAL& arg){
     return out /= arg;
 }
 
-template<typename T, size_t NVARS, size_t NORDER>
+template<typename T, int NVARS, int NORDER>
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_div(XDIFF_DUAL& out, const XDIFF_SEED& arg){
     return out /= arg;
 }
 
-template<typename F, typename T, size_t NVARS, size_t NORDER>
+template<typename F, typename T, int NVARS, int NORDER>
 requires (::xdiff::detail::isScalarOperand<F, T>)
 XDIFF_INLINE_HOST_DEVICE
 XDIFF_DUAL& assign_compound_div(XDIFF_DUAL& out, const F& arg){

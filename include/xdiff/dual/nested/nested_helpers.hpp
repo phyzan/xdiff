@@ -8,8 +8,14 @@
 namespace xdiff::detail {
 
 
-template<typename T, typename G, size_t NVARS, typename Derived>
+template<typename T, typename G, int NVARS, typename Derived>
 class RecursiveDual;
+
+struct NoNvars{
+    constexpr NoNvars() = default;
+    XDIFF_INLINE_HOST_DEVICE
+    constexpr NoNvars(size_t){}
+};
 
 // Helper struct to extract the dual type (or scalar type) that a recursive dual contains
 template<typename U>
@@ -18,22 +24,22 @@ struct DualInspector {
     using type = U;
 };
 
-template<typename T, size_t NVARS, size_t NORDER>
+template<typename T, int NVARS, int NORDER>
 struct DualInspector<Dual<T, NVARS, NORDER, Layout::Nested>> {
     using type = Dual<T, NVARS, NORDER, Layout::Nested>;
 };
 
-template<typename T, size_t NVARS, size_t NORDER>
+template<typename T, int NVARS, int NORDER>
 struct DualInspector<lazy::LazyType<Dual<T, NVARS, NORDER, Layout::Nested>>> {
     using type = Dual<T, NVARS, NORDER, Layout::Nested>;
 };
 
 // Helper to determine the base RecursiveDual for the Dual class
-template<typename Derived, typename T, size_t NVARS, size_t NORDER>
+template<typename Derived, typename T, int NVARS, int NORDER>
 struct RecursiveBaseHelper {
 #ifdef XDIFF_LAZY_NESTED_DUAL
     using GradType = std::conditional_t<
-        NVARS == 0,
+        NVARS == -1,
         lazy::LazyType<Dual<T, NVARS, NORDER - 1, Layout::Nested>>,
         Dual<T, NVARS, NORDER - 1, Layout::Nested>
     >;
@@ -43,12 +49,12 @@ struct RecursiveBaseHelper {
     using type = RecursiveDual<T, GradType, NVARS, Derived>;
 };
 
-template<typename Derived, typename T, size_t NVARS>
+template<typename Derived, typename T, int NVARS>
 struct RecursiveBaseHelper<Derived, T, NVARS, 1> {
     using type = RecursiveDual<T, T, NVARS, Derived>;
 };
 
-template<typename Derived, typename T, size_t NVARS, size_t NORDER>
+template<typename Derived, typename T, int NVARS, int NORDER>
 using GetRecursiveBase = typename RecursiveBaseHelper<Derived, T, NVARS, NORDER>::type;
 
 

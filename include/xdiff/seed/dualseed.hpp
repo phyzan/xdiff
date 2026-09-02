@@ -29,7 +29,7 @@ struct UnusedSize{
  * the value and the axis, and the operators reconstruct the derivatives on the fly. It takes
  * part in every operation a Dual does, and any such operation yields a Dual.
  */
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 class Seed{
 
     static_assert(NORDER > 0, "A Seed must carry at least one derivative order");
@@ -42,7 +42,7 @@ public:
 
     XDIFF_INLINE_HOST_DEVICE
     Seed(T value, size_t axis, size_t nvars) : value_(std::move(value)), axis_(axis), nvars_(nvars) {
-        assert((NVARS == 0 || nvars == NVARS) && "nvars must match NVARS for a compile-time known number of variables in Seed");
+        assert((NVARS == -1 || nvars == size_t(NVARS)) && "nvars must match NVARS for a compile-time known number of variables in Seed");
         assert(axis < this->nvars() && "Axis out of bounds");
     }
 
@@ -54,7 +54,7 @@ public:
     /// @brief Builds the Dual this seed stands for.
     XDIFF_INLINE_HOST_DEVICE
     DualType to_dual() const{
-        return DualType{value_, MakeDual{.axis = int(axis_), .nvars = nvars(), .order = NORDER}};
+        return DualType{value_, MakeDual{.axis = int(axis_), .nvars = int(nvars()), .order = NORDER}};
     }
 
     /**
@@ -80,7 +80,7 @@ public:
     [[nodiscard]]
     XDIFF_INLINE_HOST_DEVICE
     constexpr size_t nvars() const{
-        if constexpr (NVARS > 0) {
+        if constexpr (NVARS >= 0) {
             return NVARS;
         } else {
             return nvars_;
@@ -97,7 +97,7 @@ private:
 
     T value_;
     size_t axis_;
-    [[no_unique_address]] std::conditional_t<NVARS == 0, size_t, detail::UnusedSize> nvars_;
+    [[no_unique_address]] std::conditional_t<NVARS == -1, size_t, detail::UnusedSize> nvars_;
 };
 
 
@@ -111,7 +111,7 @@ private:
  * SeedVector is both the range and its own iterator, so it supports range-for as well as the
  * pointer-like interface (`*`, `[]`, `++`, `--`, `+`, `-`).
  */
-template<typename T, size_t NVARS, size_t NORDER, Layout LY>
+template<typename T, int NVARS, int NORDER, Layout LY>
 class SeedVector{
 
     static_assert(NORDER > 0, "A SeedVector must carry at least one derivative order");
@@ -124,11 +124,11 @@ public:
     using const_iterator = SeedVector;
 
     // "nvars" and "order" default to the compile-time NVARS / NORDER, and must match them wherever
-    // they are known. Only a runtime number of variables (NVARS == 0) carries a value of its own,
+    // they are known. Only a runtime number of variables (NVARS == -1) carries a value of its own,
     // and there the zero default selects the Dual's default number of variables.
     // "nvars" is validated by nv(), the one place that interprets it.
     XDIFF_INLINE_HOST_DEVICE
-    SeedVector(const T* seed, size_t nvars = NVARS, size_t order = NORDER) : seed_(seed), size_(nv(nvars)) {
+    SeedVector(const T* seed, int nvars = NVARS, int order = NORDER) : seed_(seed), size_(nv(nvars)) {
         assert(order == NORDER && "order must match NORDER for a compile-time known order in SeedVector");
         (void)order;
     }
@@ -230,7 +230,7 @@ public:
     [[nodiscard]]
     XDIFF_INLINE_HOST_DEVICE
     constexpr size_t size() const{
-        if constexpr (NVARS > 0){
+        if constexpr (NVARS >= 0){
             return NVARS;
         } else {
             return size_;
@@ -243,10 +243,10 @@ public:
         return NORDER;
     }
 
-    template<size_t Order>
+    template<int Order>
     XDIFF_INLINE_HOST_DEVICE
     SeedVector<T, NVARS, Order, LY> with_order() const {
-        return SeedVector<T, NVARS, Order, LY>{seed_, nvars(), Order} + idx_;
+        return SeedVector<T, NVARS, Order, LY>(seed_, int(nvars()), Order) + idx_;
     }
 
 private:
@@ -270,13 +270,13 @@ private:
     }
 
     XDIFF_INLINE_HOST_DEVICE
-    static size_t nv(size_t nvars){
-        if constexpr (NVARS > 0){
+    static size_t nv(int nvars){
+        if constexpr (NVARS >= 0){
             assert(nvars == NVARS && "nvars must match NVARS for a compile-time known number of variables in SeedVector");
             (void)nvars;
-            return NVARS;
+            return size_t(NVARS);
         } else {
-            return nvars > 0 ? nvars : Dual<T, NVARS, NORDER, LY>::get_default_nvars();
+            return nvars >= 0 ? size_t(nvars) : Dual<T, NVARS, NORDER, LY>::get_default_nvars();
         }
     }
 
