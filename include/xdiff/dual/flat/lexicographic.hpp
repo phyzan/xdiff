@@ -5,11 +5,14 @@
 
 namespace xdiff {
 
-template<size_t NVARS, size_t NORDER>
+template<int NVARS, int NORDER>
 struct MultiDiff{
+
+    static_assert(NVARS >= 0 && NORDER >= 0, "MultiDiff requires a compile-time known NVARS >= 0 and NORDER >= 0");
+
     static constexpr size_t Nvars = NVARS;   ///< Number of independent variables
     static constexpr size_t Norder = NORDER;   ///< Maximum derivative order
-    static constexpr size_t Ntot = xdiff::tools::comb(NVARS+NORDER, NORDER); ///< Total stored values (value + all derivatives)
+    static constexpr size_t Ntot = xdiff::tools::comb(size_t(NVARS)+size_t(NORDER), size_t(NORDER)); ///< Total stored values (value + all derivatives)
 
     // =========================================================================
     // Static methods for derivative indexing
@@ -25,7 +28,11 @@ struct MultiDiff{
      */
     XDIFF_INLINE_HOST_DEVICE
     static constexpr size_t ndiffs(size_t order){
-        return tools::comb(NVARS+order-1, order);
+        if constexpr (NVARS == 0){
+            return order == 0 ? 1 : 0;
+        } else {
+            return tools::comb(size_t(NVARS)+order-1, order);
+        }
     }
 
     /**
@@ -100,15 +107,23 @@ struct MultiDiff{
      */
     template<std::unsigned_integral... IntType>
     XDIFF_INLINE_HOST_DEVICE static constexpr size_t offset(IntType... order){
-        return global_offset((static_cast<size_t>(order)+...)) + local_offset(order...);
+        if constexpr (sizeof...(order) == 0){
+            return 0;
+        } else {
+            return global_offset((static_cast<size_t>(order)+...)) + local_offset(order...);
+        }
     }
 
     /// @brief Computes array offset from a diff_count array.
     XDIFF_INLINE_HOST_DEVICE
     static constexpr size_t offset(const std::array<size_t, Nvars>& diff_count){
-        return XDIFF_EXPAND(Nvars, I,
-            return global_offset((diff_count[I]+...)) + local_offset(diff_count[I]...);
-        );
+        if constexpr (NVARS == 0){
+            return 0;
+        } else {
+            return XDIFF_EXPAND(Nvars, I,
+                return global_offset((diff_count[I]+...)) + local_offset(diff_count[I]...);
+            );
+        }
     }
 
     /**

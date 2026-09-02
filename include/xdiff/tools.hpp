@@ -239,12 +239,13 @@ using GetDerived = std::conditional_t<(std::is_same_v<Derived, void>), Cls, Deri
 
 namespace xdiff{
 
-template<typename T, size_t N = 0>
+template<typename T, long N = -1>
 class Vector;
 
 
-template<typename T, size_t N>
+template<typename T, long N>
 class Vector {
+    static_assert(N >= 0, "Vector size must be non-negative");
 
 public:
     XDIFF_INLINE_HOST_DEVICE
@@ -261,9 +262,9 @@ public:
 
     // Custom constructors
     XDIFF_INLINE_HOST_DEVICE
-    constexpr Vector(size_t n) {assert(n == N && "Size mismatch in Vector constructor");}
+    constexpr Vector(size_t n) {assert(n >= 0 && n == size_t(N) && "Size mismatch in Vector constructor");}
     XDIFF_INLINE_HOST_DEVICE
-    constexpr Vector(size_t n, const T& value) : Vector(private_tag{}, n, std::make_index_sequence<N>{}, value) { assert(n == N && "Size mismatch in Vector constructor"); }
+    constexpr Vector(size_t n, const T& value) : Vector(private_tag{}, n, std::make_index_sequence<N>{}, value) { assert(n == size_t(N) && "Size mismatch in Vector constructor"); }
     XDIFF_INLINE_HOST_DEVICE
     constexpr Vector(size_t n, T& value) : Vector(n, static_cast<const T&>(value)) {}
     XDIFF_INLINE_HOST_DEVICE
@@ -331,7 +332,7 @@ private:
     template<typename... U, size_t... I>
     XDIFF_INLINE_HOST_DEVICE
     constexpr Vector(private_tag, size_t n, std::index_sequence<I...>, const U&... values) : data_{ { ((void)I, T(values...))... } } {
-        assert(n == N && "Size mismatch in Vector constructor");
+        assert(n == size_t(N) && "Size mismatch in Vector constructor");
     }
 
     template<typename... U>
@@ -340,13 +341,13 @@ private:
         static_assert(sizeof...(U) == N, "Size mismatch in Vector constructor");
     }
 
-    std::array<T, N> data_;
+    std::array<T, size_t(N)> data_;
 };
 
 
 
 template<typename T>
-class Vector<T, 0> {
+class Vector<T, -1> {
 
 public:
 

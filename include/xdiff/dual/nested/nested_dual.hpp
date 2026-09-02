@@ -15,7 +15,7 @@ struct DefaultNvarsHolder{
 };
 
 // Base class for recursive dual numbers, defining the core interface and common functionality.
-template<typename Derived, typename T, typename G, size_t NVARS>
+template<typename Derived, typename T, typename G, int NVARS>
 class RecursiveDualBase : public DualBase<Derived, T, NVARS, Layout::Nested>{    
 
     using Base = DualBase<Derived, T, NVARS, Layout::Nested>;
@@ -91,22 +91,22 @@ protected:
 
     template<typename U>
     XDIFF_INLINE_HOST_DEVICE
-    explicit RecursiveDualBase(U&& value, MakeDual md) requires (!std::is_same_v<T, G>) : true_value(std::forward<U>(value), md) {}
+    explicit RecursiveDualBase(U&& value, MakeDual md) requires (!std::is_same_v<T, G>) : true_value(std::forward<U>(value), MakeDual{.axis = md.axis, .nvars = md.nvars, .order = -1}) {}
 
     XDIFF_INLINE_HOST_DEVICE
     RecursiveDualBase(MakeDual /*md*/) requires (std::is_same_v<T, G>) : true_value{} {}
 
     XDIFF_INLINE_HOST_DEVICE
-    RecursiveDualBase(MakeDual md) requires (!std::is_same_v<T, G>) : true_value(md) {}
+    RecursiveDualBase(MakeDual md) requires (!std::is_same_v<T, G>) : true_value(MakeDual{.axis = md.axis, .nvars = md.nvars, .order = -1}) {}
 
 };
 
 
 // RecursiveDual for compile-time known number of variables.
-template<typename T, typename G, size_t NVARS, typename Derived>
+template<typename T, typename G, int NVARS, typename Derived>
 class  RecursiveDual : public RecursiveDualBase<xdiff::tools::GetDerived<RecursiveDual<T, G, NVARS, Derived>, Derived>, T, G, NVARS> {
 
-    static_assert(NVARS > 0, "NVARS must be positive for compile-time known number of variables in RecursiveDual");
+    static_assert(NVARS >= 0, "NVARS must be non-negative for a compile-time known number of variables in RecursiveDual");
 
     using Base = RecursiveDualBase<xdiff::tools::GetDerived<RecursiveDual<T, G, NVARS, Derived>, Derived>, T, G, NVARS>;
 
@@ -122,7 +122,7 @@ public:
     template<typename U>
     XDIFF_INLINE_HOST_DEVICE
     explicit RecursiveDual(U&& value, MakeDual md) : Base(std::forward<U>(value), md), diffs_{} {
-        assert((md.nvars == NVARS || md.nvars == 0) && "nvars must match NVARS for compile-time known number of variables in RecursiveDual");
+        assert((md.nvars == NVARS || md.nvars == -1) && "nvars must match NVARS for compile-time known number of variables in RecursiveDual");
         assert(md.axis < int(NVARS) && "Axis index must be within the number of derivatives");
         if (md.axis >= 0) {
             diffs_[md.axis] = 1; // Set the derivative for the specified axis to 1
@@ -131,7 +131,7 @@ public:
 
     XDIFF_INLINE_HOST_DEVICE
     RecursiveDual(MakeDual md) : Base(md), diffs_{} {
-        assert((md.nvars == NVARS || md.nvars == 0) && "nvars must match NVARS for compile-time known number of variables in RecursiveDual");
+        assert((md.nvars == NVARS || md.nvars == -1) && "nvars must match NVARS for compile-time known number of variables in RecursiveDual");
         assert(md.axis == -1 && "For uninitialized Dual, the axis is not used and should be -1");
     }
 
@@ -186,9 +186,9 @@ private:
 
 // RecursiveDual for runtime known number of variables.
 template<typename T, typename G, typename Derived>
-class RecursiveDual<T, G, 0, Derived> : public RecursiveDualBase<xdiff::tools::GetDerived<RecursiveDual<T, G, 0, Derived>, Derived>, T, G, 0> {
+class RecursiveDual<T, G, -1, Derived> : public RecursiveDualBase<xdiff::tools::GetDerived<RecursiveDual<T, G, -1, Derived>, Derived>, T, G, -1> {
 
-    using Base = RecursiveDualBase<xdiff::tools::GetDerived<RecursiveDual<T, G, 0, Derived>, Derived>, T, G, 0>;
+    using Base = RecursiveDualBase<xdiff::tools::GetDerived<RecursiveDual<T, G, -1, Derived>, Derived>, T, G, -1>;
 
 public:
 
@@ -200,12 +200,12 @@ public:
         return DefaultNvarsHolder<T>::default_nvars;
     }
 
-    RecursiveDual() requires(!std::is_same_v<T, G>): Base(), diffs_(get_default_nvars(), MakeDual{.axis = -1, .nvars = get_default_nvars()}) {}
+    RecursiveDual() requires(!std::is_same_v<T, G>): Base(), diffs_(get_default_nvars(), MakeDual{.axis = -1, .nvars = int(get_default_nvars())}) {}
 
     RecursiveDual() requires (std::is_same_v<T, G>): Base(), diffs_(get_default_nvars()) {}
 
     template<typename U>
-    explicit RecursiveDual(U&& value, MakeDual md) requires (!std::is_same_v<T, G>) : Base(std::forward<U>(value), md), diffs_(nv(md.nvars), MakeDual{.axis = -1, .nvars = md.nvars, .order = md.order}) {
+    explicit RecursiveDual(U&& value, MakeDual md) requires (!std::is_same_v<T, G>) : Base(std::forward<U>(value), md), diffs_(nv(md.nvars), MakeDual{.axis = -1, .nvars = md.nvars, .order = -1}) {
         assert(md.axis < int(diffs_.size()) && "Axis index must be within the number of derivatives");
         if (md.axis >= 0) {
             diffs_[md.axis] = 1;
@@ -222,7 +222,7 @@ public:
 
     RecursiveDual(MakeDual md) requires (std::is_same_v<T, G>): Base(md), diffs_(nv(md.nvars)) {}
 
-    RecursiveDual(MakeDual md) requires (!std::is_same_v<T, G>): Base(md), diffs_(nv(md.nvars), md) {
+    RecursiveDual(MakeDual md) requires (!std::is_same_v<T, G>): Base(md), diffs_(nv(md.nvars), MakeDual{.axis = -1, .nvars = md.nvars, .order = -1}) {
         assert(md.axis == -1 && "For uninitialized Dual, the axis is not used and should be -1");
     }
 
@@ -243,7 +243,7 @@ public:
     operator T() const = delete; // Disable implicit conversion to T to avoid accidental loss of derivative information.
 
     void set_nvars(size_t nvars){
-        diffs_ = Vector<G, 0>(nvars);
+        diffs_ = Vector<G, -1>(nvars);
         if constexpr (!std::is_same_v<T, G>){
             diffs_.resize(nvars);
             for (size_t i = 0; i < nvars; ++i) {
@@ -275,11 +275,11 @@ protected:
 
 private:
 
-    static size_t nv(size_t nvars){
-        return nvars > 0 ? nvars : DefaultNvarsHolder<T>::default_nvars;
+    static size_t nv(int nvars){
+        return nvars >= 0 ? size_t(nvars) : DefaultNvarsHolder<T>::default_nvars;
     }
 
-    Vector<G, 0> diffs_; // The derivative values of the dual number
+    Vector<G, -1> diffs_; // The derivative values of the dual number
 };
 
 
@@ -288,12 +288,16 @@ private:
 
 namespace xdiff{
 
-template<typename T, size_t NVARS, size_t NORDER>
+template<typename T, int NVARS, int NORDER>
 requires (NORDER > 0)
 class Dual<T, NVARS, NORDER, Layout::Nested> : public xdiff::detail::GetRecursiveBase<Dual<T, NVARS, NORDER, Layout::Nested>, T, NVARS, NORDER> {
 
     using Base = xdiff::detail::GetRecursiveBase<Dual<T, NVARS, NORDER, Layout::Nested>, T, NVARS, NORDER>;
+
+    static_assert(NVARS >= -1, "Nested Dual requires NVARS >= -1");
 public:
+
+    using ReducedType = Dual<T, NVARS, NORDER-1, Layout::Nested>;
 
     XDIFF_INLINE_HOST_DEVICE
     Dual() = default;
@@ -315,11 +319,11 @@ public:
     template<typename U>
     requires (!std::is_same_v<std::decay_t<U>, Dual>)
     XDIFF_INLINE_HOST_DEVICE
-    explicit Dual(U&& value, MakeDual md = {.axis = -1, .nvars=NVARS, .order=NORDER}) : Base(std::forward<U>(value), md) {}
+    explicit Dual(U&& value, MakeDual md = {.axis = -1, .nvars=NVARS, .order=NORDER}) : Base(std::forward<U>(value), validate(md)) {}
 
     // TODO : For internal use only
     XDIFF_INLINE_HOST_DEVICE
-    Dual(MakeDual md): Base(md) {}
+    Dual(MakeDual md): Base(validate(md)) {}
 
     template<typename U>
     XDIFF_INLINE_HOST_DEVICE
@@ -335,10 +339,10 @@ public:
      * derivative, of every order, is zero. Assigning the scalar value first clears the whole
      * gradient recursively, so only that one entry is left to set.
      */
-    template<size_t No>
+    template<int No>
     XDIFF_INLINE_HOST_DEVICE
     Dual& operator=(const Seed<T, NVARS, No, Layout::Nested>& seed) {
-        if constexpr (NVARS == 0) {
+        if constexpr (NVARS == -1) {
             if (this->nvars() != seed.nvars()) {
                 this->set_nvars(seed.nvars());
             }
@@ -472,14 +476,18 @@ public:
     XDIFF_INLINE_HOST_DEVICE
     constexpr const T& get_diff_wrt(Int... x) const{
         static_assert(sizeof...(x)<=NORDER, "Number of differentiations requested must be <= NORDER");
-        return diff_accessor(*this, x...);
+        if constexpr (sizeof...(x) == 0){
+            return this->value();
+        } else {
+            return diff_accessor(*this, x...);
+        }
     }
 
-    template<std::integral... Int>
-    requires (NORDER > 1)
     XDIFF_INLINE_HOST_DEVICE
-    Dual<T, NVARS, NORDER-1, Layout::Nested> trimmed() const{
-        return this->true_value;
+    ReducedType trimmed() const{
+        ReducedType out;
+        out = this->true_value;
+        return out;
     }
 
     template<std::integral... IntType>
@@ -489,7 +497,7 @@ public:
         // TODO : should be able to do <= NORDER.
         // This must be fixed by allowing NORDER=0 as a template parameter, without that meaning dynamic size
         // Dynamic size should be NORDER = -1 by changing from size_t -> int
-        static_assert(sizeof...(x) < NORDER, "Number of differentiations requested must be <= NORDER");
+        static_assert(sizeof...(x) <= NORDER, "Number of differentiations requested must be <= NORDER");
         if constexpr (sizeof...(x) == 0){
             return (*this);
         } else {
@@ -497,7 +505,7 @@ public:
         }
     }
 
-    static void set_default_nvars(size_t nvars) requires (NVARS == 0) {
+    static void set_default_nvars(size_t nvars) requires (NVARS == -1) {
         Base::set_default_nvars(nvars);
     }
 
@@ -517,7 +525,7 @@ public:
 
     template<typename Action>
     inline static constexpr void with_default_nvars([[maybe_unused]] size_t nvars, Action&& action) {
-        if constexpr (NVARS == 0) {
+        if constexpr (NVARS == -1) {
             size_t old_nvars = Base::get_default_nvars();
             Base::set_default_nvars(nvars);
             try{
@@ -535,16 +543,44 @@ public:
 
 private:
 
-    template<typename U, size_t Nv, size_t Nord, Layout St>
+    XDIFF_INLINE_HOST_DEVICE
+    static MakeDual validate(MakeDual md){
+        if constexpr (NVARS >= 0){
+            if (md.nvars != NVARS && md.nvars != -1) {
+                throw std::invalid_argument("nvars must be -1 or match NVARS for compile-time known number of variables in Dual");
+            }
+        } else {
+            if (md.nvars < -1) {
+                throw std::invalid_argument("nvars must be -1 or non-negative for a runtime number of variables in Dual");
+            }
+        }
+        if (md.order != NORDER && md.order != -1) {
+            throw std::invalid_argument("order must be -1 or match NORDER for compile-time known order in Dual");
+        }
+        if (md.axis < -1 || md.axis >= effective_nvars(md)) {
+            throw std::invalid_argument("axis must be -1 or within the number of variables in Dual");
+        }
+        return md;
+    }
+
+    XDIFF_INLINE_HOST_DEVICE
+    static int effective_nvars(MakeDual md){
+        if (md.nvars >= 0) {
+            return md.nvars;
+        }
+        if constexpr (NVARS >= 0){
+            return NVARS;
+        } else {
+            return int(Base::get_default_nvars());
+        }
+    }
+
+    template<typename U, int Nv, int Nord, Layout St>
     friend class Dual;   // every Dual is a friend
 
     friend struct detail::NestedDualOperationHelper;
 
-
-
-
-
-    template<size_t NORD, std::integral First, std::integral... Int>
+    template<int NORD, std::integral First, std::integral... Int>
     XDIFF_INLINE_HOST_DEVICE
     static constexpr const T& diff_accessor(const Dual<T, NVARS, NORD, Layout::Nested>& dual, First x0, Int... x) {
         static_assert(sizeof...(x) < NORD, "Number of differentiations requested must be < NORDER");
@@ -557,9 +593,11 @@ private:
 
     template<std::integral First, std::integral... IntType>
     XDIFF_INLINE_HOST_DEVICE
-    constexpr const auto& trimmed_diff_wrt_helper(First x0, IntType... x) const{
+    constexpr auto trimmed_diff_wrt_helper(First x0, IntType... x) const{
         if constexpr (sizeof...(x) == 0){
-            return (*this)[x0];
+            ReducedType out;
+            out = (*this)[x0];
+            return out;
         } else {
             return (*this)[x0].trimmed_diff_wrt(x...);
         }
@@ -582,6 +620,248 @@ private:
             }
         }
     }
+};
+
+
+template<typename T, int NVARS>
+class Dual<T, NVARS, 0, Layout::Nested> : public xdiff::detail::RecursiveDualBase<Dual<T, NVARS, 0, Layout::Nested>, T, T, NVARS> {
+
+    using Base = xdiff::detail::RecursiveDualBase<Dual<T, NVARS, 0, Layout::Nested>, T, T, NVARS>;
+
+    static_assert(NVARS >= -1, "Nested Dual requires NVARS >= -1");
+public:
+
+    using ReducedType = Dual<T, NVARS, 0, Layout::Nested>;
+
+    XDIFF_INLINE_HOST_DEVICE
+    Dual() : Base(), nvars_(nv(-1)) {}
+    XDIFF_INLINE_HOST_DEVICE
+    Dual(const Dual&) = default;
+    XDIFF_INLINE_HOST_DEVICE
+    Dual(Dual&&) noexcept = default;
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator=(const Dual&) = default;
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator=(Dual&&) noexcept = default;
+    XDIFF_INLINE_HOST_DEVICE
+    ~Dual() = default;
+
+    template<typename U>
+    requires (!std::is_same_v<std::decay_t<U>, Dual>)
+    XDIFF_INLINE_HOST_DEVICE
+    explicit Dual(U&& value, MakeDual md = {.axis = -1, .nvars = NVARS, .order = 0}) : Base(std::forward<U>(value), validate(md)), nvars_(nv(md.nvars)) {}
+
+    XDIFF_INLINE_HOST_DEVICE
+    Dual(MakeDual md) : Base(validate(md)), nvars_(nv(md.nvars)) {}
+
+    template<typename U>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator=(U&& other) requires (!std::is_same_v<std::decay_t<U>, Dual> && detail::isScalarOperand<U, T>) {
+        Base::operator=(std::forward<U>(other));
+        return *this;
+    }
+
+    template<int No>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator=(const Seed<T, NVARS, No, Layout::Nested>& seed) {
+        this->true_value = seed.value();
+        return *this;
+    }
+
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator+=(const Dual& arg){
+        this->true_value += arg.true_value;
+        return *this;
+    }
+
+    template<int No>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator+=(const Seed<T, NVARS, No, Layout::Nested>& seed){
+        this->true_value += seed.value();
+        return *this;
+    }
+
+    template<detail::isScalarOperand<T> U>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator+=(const U& arg){
+        this->true_value += arg;
+        return *this;
+    }
+
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator-=(const Dual& arg){
+        this->true_value -= arg.true_value;
+        return *this;
+    }
+
+    template<int No>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator-=(const Seed<T, NVARS, No, Layout::Nested>& seed){
+        this->true_value -= seed.value();
+        return *this;
+    }
+
+    template<detail::isScalarOperand<T> U>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator-=(const U& arg){
+        this->true_value -= arg;
+        return *this;
+    }
+
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator*=(const Dual& arg){
+        this->true_value *= arg.true_value;
+        return *this;
+    }
+
+    template<int No>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator*=(const Seed<T, NVARS, No, Layout::Nested>& seed){
+        this->true_value *= seed.value();
+        return *this;
+    }
+
+    template<detail::isScalarOperand<T> U>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator*=(const U& arg){
+        this->true_value *= arg;
+        return *this;
+    }
+
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator/=(const Dual& arg){
+        this->true_value /= arg.true_value;
+        return *this;
+    }
+
+    template<int No>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator/=(const Seed<T, NVARS, No, Layout::Nested>& seed){
+        this->true_value /= seed.value();
+        return *this;
+    }
+
+    template<detail::isScalarOperand<T> U>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator/=(const U& arg){
+        this->true_value /= arg;
+        return *this;
+    }
+
+    operator T() const = delete;
+
+    [[nodiscard]]
+    XDIFF_INLINE_HOST_DEVICE
+    constexpr size_t nvars() const{
+        if constexpr (NVARS >= 0){
+            return size_t(NVARS);
+        } else {
+            return nvars_;
+        }
+    }
+
+    [[nodiscard]]
+    XDIFF_INLINE_HOST_DEVICE
+    constexpr size_t order() const{
+        return 0;
+    }
+
+    template<std::integral... Int>
+    XDIFF_INLINE_HOST_DEVICE
+    constexpr const T& get_diff_wrt(Int... x) const{
+        static_assert(sizeof...(x) == 0, "Number of differentiations requested must be <= NORDER");
+        return this->true_value;
+    }
+
+    XDIFF_INLINE_HOST_DEVICE
+    ReducedType trimmed() const{
+        return *this;
+    }
+
+    template<std::integral... Int>
+    XDIFF_INLINE_HOST_DEVICE
+    auto constexpr trimmed_diff_wrt(Int... x) const{
+        static_assert(sizeof...(x) == 0, "Number of differentiations requested must be <= NORDER");
+        return *this;
+    }
+
+    static void set_default_nvars(size_t nvars) requires (NVARS == -1) {
+        xdiff::detail::DefaultNvarsHolder<T>::default_nvars = nvars;
+    }
+
+    XDIFF_INLINE_HOST_DEVICE
+    void set_nvars(size_t nvars) requires (NVARS == -1) {
+        nvars_ = nvars;
+    }
+
+    std::array<size_t, 0> get_vmat_shape() const{
+        return {};
+    }
+
+    template<typename Action>
+    inline static constexpr void with_default_nvars([[maybe_unused]] size_t nvars, Action&& action) {
+        if constexpr (NVARS == -1) {
+            size_t old_nvars = xdiff::detail::DefaultNvarsHolder<T>::default_nvars;
+            xdiff::detail::DefaultNvarsHolder<T>::default_nvars = nvars;
+            try{
+                std::forward<Action>(action)();
+            } catch(...) {
+                xdiff::detail::DefaultNvarsHolder<T>::default_nvars = old_nvars;
+                throw;
+            }
+            xdiff::detail::DefaultNvarsHolder<T>::default_nvars = old_nvars;
+        } else {
+            assert((nvars == NVARS) && "nvars must match NVARS for compile-time known number of variables in nested Dual");
+            std::forward<Action>(action)();
+        }
+    }
+
+private:
+
+    XDIFF_INLINE_HOST_DEVICE
+    static MakeDual validate(MakeDual md){
+        if constexpr (NVARS >= 0){
+            if (md.nvars != NVARS && md.nvars != -1) {
+                throw std::invalid_argument("nvars must be -1 or match NVARS for compile-time known number of variables in Dual");
+            }
+        } else {
+            if (md.nvars < -1) {
+                throw std::invalid_argument("nvars must be -1 or non-negative for a runtime number of variables in Dual");
+            }
+        }
+        if (md.order != 0 && md.order != -1) {
+            throw std::invalid_argument("order must be -1 or match NORDER for compile-time known order in Dual");
+        }
+        if (md.axis < -1 || md.axis >= effective_nvars(md)) {
+            throw std::invalid_argument("axis must be -1 or within the number of variables in Dual");
+        }
+        return md;
+    }
+
+    XDIFF_INLINE_HOST_DEVICE
+    static int effective_nvars(MakeDual md){
+        if (md.nvars >= 0) {
+            return md.nvars;
+        }
+        if constexpr (NVARS >= 0){
+            return NVARS;
+        } else {
+            return int(xdiff::detail::DefaultNvarsHolder<T>::default_nvars);
+        }
+    }
+
+    XDIFF_INLINE_HOST_DEVICE
+    static size_t nv(int nvars){
+        if constexpr (NVARS >= 0){
+            return size_t(NVARS);
+        } else {
+            return nvars >= 0 ? size_t(nvars) : xdiff::detail::DefaultNvarsHolder<T>::default_nvars;
+        }
+    }
+
+    [[no_unique_address]] std::conditional_t<NVARS == -1, size_t, xdiff::detail::NoNvars> nvars_;
+
+    friend struct detail::NestedDualOperationHelper;
 };
 
 
