@@ -26,7 +26,7 @@ target_compile_definitions(xdiff
         $<$<BOOL:${XDIFF_SCALAR_OPTIMIZATIONS}>:XDIFF_SCALAR_OPTIMIZATIONS>
 )
 
-# ----------- Add interface for lazy ---------------
+# ----------- Add interface for lazex ---------------
 
 add_subdirectory(external/lazex)
 
