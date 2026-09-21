@@ -5,7 +5,7 @@
 #include "../tools.hpp"
 #include <cstdint>
 #include <ostream>
-#include <stdexcept>
+
 
 #define XDIFF_DUAL Dual<T, NVARS, NORDER, LY>
 #define XDIFF_SEED Seed<T, NVARS, NORDER, LY>
