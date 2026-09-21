@@ -83,14 +83,14 @@ Clone and initialize submodules:
 git submodule update --init --recursive
 ```
 
-The [lazy](https://github.com/phyzan/lazy) submodule maximizes performance for runtime-sized derivatives (avoiding heap allocation bottlenecks).
+The [LazeX](https://github.com/phyzan/lazex) submodule maximizes performance for runtime-sized derivatives (avoiding heap allocation bottlenecks).
 
 **Linking via CMake:**
 ```cmake
 add_subdirectory(path/to/xdiff)
 target_link_libraries(your_target PRIVATE xdiff)
 ```
-This gives you `<xdiff/...>` and `<lazy/...>` includes, the required C++20 standard, and the [macros](#macros) below (toggle with e.g. `-DXDIFF_FAST=ON`).
+This gives you `<xdiff/...>` and `<lazex/...>` includes, the required C++20 standard, and the [options](#CMake-Options) below (toggle with e.g. `-DXDIFF_FAST=ON`).
 
 **Syntax highlighting (clangd):** configure the build from the repo root so `compile_commands.json` ends up directly in `build/`, which clangd discovers automatically:
 ```bash
@@ -143,7 +143,7 @@ class Dual;
 
 Compile with:
 ```bash
-g++ -std=c++20 -Iinclude -Iexternal/lazy/include test.cpp -o test
+g++ -std=c++20 -Iinclude -Iexternal/lazex/include test.cpp -o test
 ```
 
 ```cpp
@@ -209,16 +209,16 @@ Large expressions with runtime `Nvars` are expensive due to heap allocations. En
 g++ -DXDIFF_LAZY_NESTED_DUAL ...
 ```
 
-For maximum performance, also use `lazy::LazyType` instead of `Dual`:
+For maximum performance, also use `lazex::LazyType` instead of `Dual`:
 ```cpp
-lazy::LazyType<Dual<double, 0, 2, Layout::Nested>>
+lazex::LazyType<Dual<double, 0, 2, Layout::Nested>>
 ```
 
-See the `lazy` submodule for details.
+See the `Lazex` submodule for details.
 
 ---
 
-## Macros
+## CMake Options
 
 | Macro | Effect |
 |-------|--------|
@@ -227,7 +227,7 @@ See the `lazy` submodule for details.
 | `XDIFF_LEIBNIZ_OPT` | Iterative Leibniz-rule formula for `Flat` higher-order derivatives. It will reduce compile time for large differentiation order, but may decrease performance (mainly when compiling with `g++`) |
 | `XDIFF_SCALAR_OPTIMIZATIONS` | Optimized `Dual`-scalar operations for `Flat` layout. |
 
-See useful [macros](https://github.com/phyzan/lazy#macros) for the `lazy` submodule.
+See useful [options](https://github.com/phyzan/lazex#CMake-Options) for the `lazex` submodule.
 
 
 For higher-order derivatives, prefer using the `clang++` compiler when compiling with `-O3` and `-DXDIFF_FAST`, as it inlines more aggressively and faster than `g++` does, when testing the `Layout::Flat` template parameter.

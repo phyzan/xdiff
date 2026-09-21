@@ -28,13 +28,13 @@ target_compile_definitions(xdiff
 
 # ----------- Add interface for lazy ---------------
 
-add_subdirectory(external/lazy)
+add_subdirectory(external/lazex)
 
-add_library(xdiff::lazy ALIAS lazy)
+add_library(xdiff::lazex ALIAS lazex)
 
 target_link_libraries(xdiff
     INTERFACE
-        lazy
+        lazex
 )
 
 # ----------- Dev-only targets (benchmark) ---------------

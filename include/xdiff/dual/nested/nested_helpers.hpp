@@ -3,7 +3,7 @@
 
 
 #include "../dual.hpp"
-#include <lazy/lazy.hpp>
+#include <lazex/lazex.hpp>
 
 namespace xdiff::detail {
 
@@ -30,7 +30,7 @@ struct DualInspector<Dual<T, NVARS, NORDER, Layout::Nested>> {
 };
 
 template<typename T, int NVARS, int NORDER>
-struct DualInspector<lazy::LazyType<Dual<T, NVARS, NORDER, Layout::Nested>>> {
+struct DualInspector<lazex::LazyType<Dual<T, NVARS, NORDER, Layout::Nested>>> {
     using type = Dual<T, NVARS, NORDER, Layout::Nested>;
 };
 
@@ -40,7 +40,7 @@ struct RecursiveBaseHelper {
 #ifdef XDIFF_LAZY_NESTED_DUAL
     using GradType = std::conditional_t<
         NVARS == -1,
-        lazy::LazyType<Dual<T, NVARS, NORDER - 1, Layout::Nested>>,
+        lazex::LazyType<Dual<T, NVARS, NORDER - 1, Layout::Nested>>,
         Dual<T, NVARS, NORDER - 1, Layout::Nested>
     >;
 #else

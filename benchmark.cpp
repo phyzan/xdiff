@@ -116,7 +116,7 @@ int main(int argc, char *argv[]){
     }
 
     {
-        using D = lazy::LazyType<Dual<T, -1, 2, Layout::Nested>>;
+        using D = lazex::LazyType<Dual<T, -1, 2, Layout::Nested>>;
         D x(1.0, MakeDual{.axis = 0, .nvars = 3});
         D y(2.0, MakeDual{.axis = 1, .nvars = 3});
         D z(3.0, MakeDual{.axis = 2, .nvars = 3});
@@ -141,4 +141,4 @@ int main(int argc, char *argv[]){
 }
 
 
-// clang++ -std=c++20 -O3 -DNDEBUG -DXDIFF_FAST -DXDIFF_LEIBNIZ_OPT -DXDIFF_SCALAR_OPTIMIZATIONS -DXDIFF_LAZY_NESTED_DUAL -Iinclude -Iexternal/lazy/include -Iexternal/lazy/external/mpreal benchmark.cpp -o benchmark && ./benchmark 1000
+// clang++ -std=c++20 -O3 -DNDEBUG -DXDIFF_FAST -DXDIFF_LEIBNIZ_OPT -DXDIFF_SCALAR_OPTIMIZATIONS -DXDIFF_LAZY_NESTED_DUAL -Iinclude -Iexternal/lazex/include -Iexternal/lazex/external/mpreal benchmark.cpp -o benchmark && ./benchmark 1000
