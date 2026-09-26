@@ -290,6 +290,16 @@ private:
     size_t idx_ = 0;
 };
 
+template<int Nvars, int Order, Layout LY, typename T>
+SeedVector<T, Nvars, Order, LY> as_seedvector(const T* q){
+    return SeedVector<T, Nvars, Order, LY>{q};
+}
+
+template<int Nvars, int Order, Layout Ly, typename T, int ORDER, Layout LY>
+SeedVector<T, Nvars, Order, Ly> as_seedvector(const SeedVector<T, Nvars, ORDER, LY>& q){
+    return SeedVector<T, Nvars, Order, LY>{q.data()};
+}
+
 } // namespace xdiff
 
 #endif // XDIFF_SEED_DUALSEED_HPP
