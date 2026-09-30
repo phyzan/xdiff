@@ -57,7 +57,7 @@ struct NestedDualOperationHelper {
     unary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out,
                     const Dual<T, NVARS, NORDER, Layout::Nested>& arg) {
         format_nested(out, arg);
-        using G = typename Dual<T, NVARS, NORDER, Layout::Nested>::grad_type;
+        using G = Dual<T, NVARS, NORDER, Layout::Nested>::grad_type;
         using DP = DiffPair<const G&, const G&>;
 
         if constexpr (NORDER > 0){
@@ -130,7 +130,7 @@ struct NestedDualOperationHelper {
                     const Dual<T, NVARS, NORDER, Layout::Nested>& b) {
         XDIFF_ASSERT_REC_DUAL_BINARY_OPERATION(a, b);
         format_nested(out, a);
-        using G = typename Dual<T, NVARS, NORDER, Layout::Nested>::grad_type;
+        using G = Dual<T, NVARS, NORDER, Layout::Nested>::grad_type;
         using DP = DiffPair<const G&, const G&>;
 
         if constexpr (NORDER > 0){
@@ -151,7 +151,7 @@ struct NestedDualOperationHelper {
                     const Dual<T, NVARS, NORDER, Layout::Nested>& b) {
         XDIFF_ASSERT_REC_DUAL_BINARY_OPERATION(a, b);
         format_nested(out, a);
-        using G = typename Dual<T, NVARS, NORDER, Layout::Nested>::grad_type;
+        using G = Dual<T, NVARS, NORDER, Layout::Nested>::grad_type;
         using DP = DiffPair<const G&, const G&>;
 
         if constexpr (NORDER > 0){
@@ -209,7 +209,7 @@ struct NestedDualOperationHelper {
                     const Seed<T, NVARS, NORDER, Layout::Nested>& b) {
         XDIFF_ASSERT_REC_DUAL_BINARY_OPERATION(a, b);
         format_nested(out, a);
-        using G = typename Dual<T, NVARS, NORDER, Layout::Nested>::grad_type;
+        using G = Dual<T, NVARS, NORDER, Layout::Nested>::grad_type;
         using DP = DiffPair<const G&, const G&>;
 
         if constexpr (NORDER > 0){
@@ -234,7 +234,7 @@ struct NestedDualOperationHelper {
                     const F& a,
                     const Dual<T, NVARS, NORDER, Layout::Nested>& b) {
         format_nested(out, b);
-        using G = typename Dual<T, NVARS, NORDER, Layout::Nested>::grad_type;
+        using G = Dual<T, NVARS, NORDER, Layout::Nested>::grad_type;
         using DP_A = DiffPair<const F&, const ZeroValue&>;
         using DP_B = DiffPair<const G&, const G&>;
 
@@ -256,7 +256,7 @@ struct NestedDualOperationHelper {
                     const Dual<T, NVARS, NORDER, Layout::Nested>& a,
                     const F& b) {
         format_nested(out, a);
-        using G = typename Dual<T, NVARS, NORDER, Layout::Nested>::grad_type;
+        using G = Dual<T, NVARS, NORDER, Layout::Nested>::grad_type;
         using DP_A = DiffPair<const G&, const G&>;
         using DP_B = DiffPair<const F&, const ZeroValue&>;
 

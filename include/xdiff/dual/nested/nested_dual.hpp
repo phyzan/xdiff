@@ -411,7 +411,7 @@ public:
     XDIFF_INLINE_HOST_DEVICE
     Dual& operator*=(const Dual& arg){
         format_nested(*this, arg);
-        using G = typename Base::grad_type;
+        using G = Base::grad_type;
         using DP = DiffPair<const G&, const G&>;
         // The gradient is updated before the value, since the product rule needs the old value.
         for (size_t i=0; i < this->nvars(); i++){
@@ -439,7 +439,7 @@ public:
     XDIFF_INLINE_HOST_DEVICE
     Dual& operator/=(const Dual& arg){
         format_nested(*this, arg);
-        using G = typename Base::grad_type;
+        using G = Base::grad_type;
         using DP = DiffPair<const G&, const G&>;
         // The gradient is updated before the value, since the quotient rule needs the old value.
         for (size_t i=0; i < this->nvars(); i++){

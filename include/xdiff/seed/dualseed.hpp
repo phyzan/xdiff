@@ -66,7 +66,7 @@ public:
         if constexpr (NORDER > 1){
             return TrimmedType{value_, axis_, nvars()};
         } else {
-            return (value_);
+            return value_;
         }
     }
 

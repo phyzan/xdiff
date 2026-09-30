@@ -258,7 +258,7 @@ public:
     XDIFF_MAYBE_INLINE
     auto constexpr trimmed_diff_wrt() const{
         static_assert(sizeof...(I)<=NORDER, "Number of differentiations requested must be <= NORDER");
-        using ResType = typename Dual::Reduced<sizeof...(I)>;
+        using ResType = Dual::Reduced<sizeof...(I)>;
         auto constexpr OFFSETS = offsets_for_reduced_diff(I...);
         ResType res;
 
@@ -278,7 +278,7 @@ public:
     XDIFF_MAYBE_INLINE
     auto constexpr trimmed_diff_wrt(Int... x) const{
         static_assert(sizeof...(x)<=NORDER, "Number of differentiations requested must be <= NORDER");
-        using ResType = typename Dual::Reduced<sizeof...(x)>;
+        using ResType = Dual::Reduced<sizeof...(x)>;
         auto offsets = offsets_for_reduced_diff(x...);
         ResType res;
         for (size_t i=0; i<ResType::Ntot; i++){
@@ -389,7 +389,7 @@ public:
                     using IterType = tools::MultiSetIterator<OrdI+sizeof...(x), NVARS, true>;
                     IterType::apply_iter_on(
                         [&] XDIFF_DEVICE (const IterType::SetType&, const IterType::CounterType& order_of_var) XDIFF_ALWAYS_INLINE {
-                            if ((((order_of_var[I] >= nx[I])) &&...)){
+                            if (((order_of_var[I] >= nx[I]) &&...)){
                                 res[n++] = MDBase::offset(order_of_var[I]...);
                             }
                         }
@@ -462,23 +462,23 @@ namespace detail{
 template<typename STRUCT>
 struct HelperBaseOperandEvaluator{
 
-    using T = typename STRUCT::value_type;
+    using T = STRUCT::value_type;
 
     template<int Nvars, int Norder, typename... U>
     XDIFF_MAYBE_INLINE
     static Dual<T, Nvars, Norder, Layout::Flat>& optimized_eval(Dual<T, Nvars, Norder, Layout::Flat>& out, const U&... f){
         using EV = Evaluator<Nvars, Norder>;
-        using AD = typename EV::AD;
+        using AD = EV::AD;
 
         // Compute the function value
         T v = STRUCT::operation(EV::get_value(f)...);
 
-        if constexpr (!(Norder > 0 && Nvars > 0)) {
+        if constexpr (Norder <= 0 || Nvars <= 0) {
             out = AD(v);
         }
 
         if constexpr (Norder > 0 && Nvars > 0) {
-            using RT = typename AD::ReducedType;
+            using RT = AD::ReducedType;
 
             // Compute derivative w.r.t. each variable using the diff_rule
             auto q = [&] XDIFF_DEVICE <size_t I> (auto&&... g) XDIFF_ALWAYS_INLINE {
