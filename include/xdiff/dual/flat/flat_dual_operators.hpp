@@ -282,6 +282,42 @@ XDIFF_DEFINE_FLAT_DUAL_BINARY_OPERATION(operator/, assign_div, xdiff::detail::ru
 XDIFF_DEFINE_FLAT_DUAL_BINARY_OPERATION(pow, assign_pow, xdiff::detail::rules::Pow)
 
 
+// ------------------ power<int>(f) -------------------
+
+template<int P, typename T, int NVARS, int NORDER>
+XDIFF_INLINE_HOST_DEVICE
+Dual<T, NVARS, NORDER, Layout::Flat> &
+assign_power(Dual<T, NVARS, NORDER, Layout::Flat> &out,
+           const Dual<T, NVARS, NORDER, Layout::Flat> &arg) {
+  return xdiff::detail::OperandEvaluator<
+      xdiff::detail::rules::Power<T, P>>::optimized_eval(out, arg);
+}
+
+template<int P, typename T, int NVARS, int NORDER>
+XDIFF_INLINE_HOST_DEVICE
+Dual<T, NVARS, NORDER, Layout::Flat> &
+assign_power(Dual<T, NVARS, NORDER, Layout::Flat> &out,
+           const Seed<T, NVARS, NORDER, Layout::Flat> &arg) {
+  return xdiff::detail::OperandEvaluator<
+      xdiff::detail::rules::Power<T, P>>::optimized_eval(out, arg);
+}
+
+template<int P, typename T, int NVARS, int NORDER>
+XDIFF_INLINE_HOST_DEVICE
+Dual<T, NVARS, NORDER, Layout::Flat>
+power(const Dual<T, NVARS, NORDER, Layout::Flat> &arg) {
+  Dual<T, NVARS, NORDER, Layout::Flat> out;
+  return assign_power<P>(out, arg);
+}
+
+template<int P, typename T, int NVARS, int NORDER>
+XDIFF_INLINE_HOST_DEVICE Dual<T, NVARS, NORDER, Layout::Flat>
+power(const Seed<T, NVARS, NORDER, Layout::Flat> &arg) {
+  Dual<T, NVARS, NORDER, Layout::Flat> out;
+  return assign_power<P>(out, arg);
+}
+
+// ----------------------------------------------------
 
 XDIFF_DEFINE_FLAT_DUAL_UNARY_OPERATION(operator+, assign_pos, xdiff::detail::rules::Pos)
 XDIFF_DEFINE_FLAT_DUAL_UNARY_OPERATION(operator-, assign_neg, xdiff::detail::rules::Neg)

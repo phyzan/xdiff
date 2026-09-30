@@ -52,6 +52,42 @@ struct Neg : BaseOperand<T, Neg<T>>{
     }
 };
 
+
+/**
+ * @brief Integer power f^N, with the exponent fixed at compile time.
+ *
+ * Both the value and the derivative defer to power(), so f^N is a fold of |N|
+ * factors --- reciprocated when N < 0 --- and neither pow() nor log() is ever
+ * called. The rule stays exact for integer exponents, negative bases included.
+ */
+template<typename T, int N>
+struct Power : MathFunc<Power<T, N>, T>{
+
+    static_assert(N != 0, "Integer power must be non-zero");
+
+    using Base = MathFunc<Power<T, N>, T>;
+
+    /// @brief f^N. Like log() and exp(), the unqualified call descends the nested
+    /// layers by ADL, and reaches the generic fold once the operand is a bare scalar.
+    template<typename A>
+    XDIFF_INLINE_HOST_DEVICE
+    static decltype(auto) operation(const A& arg){
+        return power<N>(arg);
+    }
+
+    /// @brief d(f^N) = N * f^(N-1) * df
+    template<typename F, typename DF>
+    XDIFF_INLINE_HOST_DEVICE
+    static auto special_diff(const F& f, const DF& df) {
+        if constexpr (N == 1){
+            return df;
+        } else {
+            return N * power<N-1>(f) * df;
+        }
+    }
+
+};
+
 template<typename T>
 struct Log : MathFunc<Log<T>, T>{
 
