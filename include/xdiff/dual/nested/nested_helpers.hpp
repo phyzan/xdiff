@@ -55,7 +55,7 @@ struct RecursiveBaseHelper<Derived, T, NVARS, 1> {
 };
 
 template<typename Derived, typename T, int NVARS, int NORDER>
-using GetRecursiveBase = typename RecursiveBaseHelper<Derived, T, NVARS, NORDER>::type;
+using GetRecursiveBase = RecursiveBaseHelper<Derived, T, NVARS, NORDER>::type;
 
 
 struct NestedDualOperationHelper;
