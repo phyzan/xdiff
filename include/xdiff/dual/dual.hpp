@@ -16,7 +16,7 @@ namespace xdiff{
 
 enum class Layout : uint8_t {
     Flat,
-    Nested
+    Nested,
 };
 
 template<typename Derived, typename T, int NVARS, Layout LY>
@@ -137,6 +137,13 @@ XDIFF_HOST_DEVICE XDIFF_DUAL& assign_neg(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& 
 
 template<typename T, int NVARS, int NORDER, Layout LY>
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_neg(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
+
+// power<int>(Dual)
+template<int P, typename T, int NVARS, int NORDER, Layout LY>
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_power(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
+
+template<int P, typename T, int NVARS, int NORDER, Layout LY>
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_power(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
 
 // abs(Dual)
 template<typename T, int NVARS, int NORDER, Layout LY>
@@ -645,24 +652,6 @@ requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL pow(const F& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
 
-// -------------------------------- Compound assignment operator overloads --------------------------------
-
-// Addition
-
-
-
-// Subtraction
-
-
-
-// Multiplication
-
-
-
-// Division
-
-
-
 
 // -------------------------------- Comparison operator overloads --------------------------------
 
@@ -935,6 +924,36 @@ template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE bool operator>=(const F& a, const XDIFF_SEED& b){
     return a >= b.value();
+}
+
+// For any other type besides dual. Even for lazy operations,
+// where f*f*... might be a lazy expression
+namespace detail{
+
+// Folds NFACTORS copies of 'f' into a product. The copies are accumulated in a
+// parameter pack rather than a loop variable because each product may have its
+// own type, as it does for a lazy expression.
+template<size_t NFACTORS, typename F, typename... U>
+XDIFF_INLINE_HOST_DEVICE
+decltype(auto) power_fold(const F& f, const U&... copies){
+    if constexpr (sizeof...(copies) < NFACTORS){
+        return power_fold<NFACTORS>(f, copies..., f);
+    } else {
+        return (copies*...);
+    }
+}
+
+} // namespace detail
+
+template<int P, typename F>
+XDIFF_INLINE_HOST_DEVICE
+decltype(auto) power(const F& f){
+    static_assert(P != 0, "Integer power must be non-zero");
+    if constexpr (P > 0) {
+        return detail::power_fold<size_t(P)>(f);
+    } else {
+        return 1 / detail::power_fold<size_t(-P)>(f);
+    }
 }
 
 

@@ -102,6 +102,42 @@ XDIFF_DEFINE_NESTED_DUAL_BINARY_OPERATION(operator/, assign_div, xdiff::detail::
 XDIFF_DEFINE_NESTED_DUAL_BINARY_OPERATION(pow, assign_pow, xdiff::detail::rules::Pow)
 
 
+// ------------------ power<int>(f) -------------------
+
+template<int P, typename T, int NVARS, int NORDER>
+XDIFF_INLINE_HOST_DEVICE
+Dual<T, NVARS, NORDER, Layout::Nested> &
+assign_power(Dual<T, NVARS, NORDER, Layout::Nested> &out,
+           const Dual<T, NVARS, NORDER, Layout::Nested> &arg) {
+  return xdiff::detail::NestedDualOperationHelper::unary_assign_impl<
+      xdiff::detail::rules::Power<T, P>>(out, arg);
+}
+
+template<int P, typename T, int NVARS, int NORDER>
+XDIFF_INLINE_HOST_DEVICE
+Dual<T, NVARS, NORDER, Layout::Nested> &
+assign_power(Dual<T, NVARS, NORDER, Layout::Nested> &out,
+           const Seed<T, NVARS, NORDER, Layout::Nested> &arg) {
+  return xdiff::detail::NestedDualOperationHelper::unary_assign_impl<
+      xdiff::detail::rules::Power<T, P>>(out, arg);
+}
+
+template<int P, typename T, int NVARS, int NORDER>
+XDIFF_INLINE_HOST_DEVICE auto
+power(const Dual<T, NVARS, NORDER, Layout::Nested> &arg) {
+  return xdiff::detail::NestedDualOperationHelper::unary_op_impl<
+      xdiff::detail::rules::Power<T, P>>(arg);
+}
+
+template<int P, typename T, int NVARS, int NORDER>
+XDIFF_INLINE_HOST_DEVICE auto
+power(const Seed<T, NVARS, NORDER, Layout::Nested> &arg) {
+  return xdiff::detail::NestedDualOperationHelper::unary_op_impl<
+      xdiff::detail::rules::Power<T, P>>(arg);
+}
+
+// ----------------------------------------------------
+
 
 XDIFF_DEFINE_NESTED_DUAL_UNARY_OPERATION(operator+, assign_pos, xdiff::detail::rules::Pos)
 XDIFF_DEFINE_NESTED_DUAL_UNARY_OPERATION(operator-, assign_neg, xdiff::detail::rules::Neg)

@@ -51,7 +51,7 @@ struct NestedDualOperationHelper {
     // ------------------------------ Unary operation implementation ------------------------------
 
     // f(out, Dual)
-    template<template<typename> typename RuleStruct, typename T, int NVARS, int NORDER>
+    template<typename RuleStruct, typename T, int NVARS, int NORDER>
     XDIFF_INLINE_HOST_DEVICE
     static Dual<T, NVARS, NORDER, Layout::Nested>&
     unary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out,
@@ -62,15 +62,15 @@ struct NestedDualOperationHelper {
 
         if constexpr (NORDER > 0){
             for (size_t i = 0; i < arg.nvars(); i++){
-                out[i] = RuleStruct<T>::diff_rule(DP{arg.true_value, arg[i]});
+                out[i] = RuleStruct::diff_rule(DP{arg.true_value, arg[i]});
             }
         }
-        out.true_value = RuleStruct<T>::operation(arg.true_value);
+        out.true_value = RuleStruct::operation(arg.true_value);
         return out;
     }
 
     // f(out, Seed)
-    template<template<typename> typename RuleStruct, typename T, int NVARS, int NORDER>
+    template<typename RuleStruct, typename T, int NVARS, int NORDER>
     XDIFF_INLINE_HOST_DEVICE
     static Dual<T, NVARS, NORDER, Layout::Nested>&
     unary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out,
@@ -83,20 +83,20 @@ struct NestedDualOperationHelper {
         if constexpr (NORDER > 0){
             for (size_t i = 0; i < arg.nvars(); i++){
                 if (i == arg.axis()){
-                    out[i] = RuleStruct<T>::diff_rule(DiffPair{arg.trimmed(), 1});
+                    out[i] = RuleStruct::diff_rule(DiffPair{arg.trimmed(), 1});
                 } else {
-                    out[i] = RuleStruct<T>::diff_rule(DiffPair{arg.trimmed(), ZeroValue{}});
+                    out[i] = RuleStruct::diff_rule(DiffPair{arg.trimmed(), ZeroValue{}});
                 }
             }
         }
 
-        out.true_value = RuleStruct<T>::operation(arg.trimmed());
+        out.true_value = RuleStruct::operation(arg.trimmed());
 
         return out;
     }
 
     // f(Dual) -> Dual (unary operation)
-    template<template<typename> typename RuleStruct, typename T, int NVARS, int NORDER>
+    template<typename RuleStruct, typename T, int NVARS, int NORDER>
     XDIFF_INLINE_HOST_DEVICE
     static Dual<T, NVARS, NORDER, Layout::Nested> 
     unary_op_impl(const Dual<T, NVARS, NORDER, Layout::Nested>& arg) {
@@ -106,7 +106,7 @@ struct NestedDualOperationHelper {
     }
 
     // f(Seed) -> Dual (unary operation)
-    template<template<typename> typename RuleStruct, typename T, int NVARS, int NORDER>
+    template<typename RuleStruct, typename T, int NVARS, int NORDER>
     XDIFF_INLINE_HOST_DEVICE
     static Dual<T, NVARS, NORDER, Layout::Nested> 
     unary_op_impl(const Seed<T, NVARS, NORDER, Layout::Nested>& arg) {
@@ -122,7 +122,7 @@ struct NestedDualOperationHelper {
     // ------------------------------ Binary operation implementation ------------------------------
 
     // Binary: (Dual, Dual)
-    template<template<typename> typename RuleStruct, typename T, int NVARS, int NORDER>
+    template<typename RuleStruct, typename T, int NVARS, int NORDER>
     XDIFF_INLINE_HOST_DEVICE
     static Dual<T, NVARS, NORDER, Layout::Nested>& 
     binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out,
@@ -135,15 +135,15 @@ struct NestedDualOperationHelper {
 
         if constexpr (NORDER > 0){
             for (size_t i = 0; i < a.nvars(); i++){
-                out[i] = RuleStruct<T>::diff_rule(DP{a.true_value, a[i]}, DP{b.true_value, b[i]});
+                out[i] = RuleStruct::diff_rule(DP{a.true_value, a[i]}, DP{b.true_value, b[i]});
             }
         }
-        out.true_value = RuleStruct<T>::operation(a.true_value, b.true_value);
+        out.true_value = RuleStruct::operation(a.true_value, b.true_value);
         return out;
     }
 
     // Binary: (Seed, Dual)
-    template<template<typename> typename RuleStruct, typename T, int NVARS, int NORDER>
+    template<typename RuleStruct, typename T, int NVARS, int NORDER>
     XDIFF_INLINE_HOST_DEVICE
     static Dual<T, NVARS, NORDER, Layout::Nested>& 
     binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out,
@@ -157,18 +157,18 @@ struct NestedDualOperationHelper {
         if constexpr (NORDER > 0){
             for (size_t i = 0; i < a.nvars(); i++){
                 if (i == a.axis()){
-                    out[i] = RuleStruct<T>::diff_rule(DiffPair{a.trimmed(), 1}, DP{b.true_value, b[i]});
+                    out[i] = RuleStruct::diff_rule(DiffPair{a.trimmed(), 1}, DP{b.true_value, b[i]});
                 }else{
-                    out[i] = RuleStruct<T>::diff_rule(DiffPair{a.trimmed(), ZeroValue{}}, DP{b.true_value, b[i]});
+                    out[i] = RuleStruct::diff_rule(DiffPair{a.trimmed(), ZeroValue{}}, DP{b.true_value, b[i]});
                 }
             }
         }
-        out.true_value = RuleStruct<T>::operation(a.trimmed(), b.true_value);
+        out.true_value = RuleStruct::operation(a.trimmed(), b.true_value);
         return out;
     }
 
     // Binary: (Seed, Seed)
-    template<template<typename> typename RuleStruct, typename T, int NVARS, int NORDER>
+    template<typename RuleStruct, typename T, int NVARS, int NORDER>
     XDIFF_INLINE_HOST_DEVICE
     static Dual<T, NVARS, NORDER, Layout::Nested>& 
     binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out,
@@ -186,22 +186,22 @@ struct NestedDualOperationHelper {
                 const bool grad_a = (i == a.axis());
                 const bool grad_b = (i == b.axis());
                 if (grad_a && grad_b){
-                    out[i] = RuleStruct<T>::diff_rule(DiffPair{a.trimmed(), 1}, DiffPair{b.trimmed(), 1});
+                    out[i] = RuleStruct::diff_rule(DiffPair{a.trimmed(), 1}, DiffPair{b.trimmed(), 1});
                 } else if (grad_a){
-                    out[i] = RuleStruct<T>::diff_rule(DiffPair{a.trimmed(), 1}, DiffPair{b.trimmed(), ZeroValue{}});
+                    out[i] = RuleStruct::diff_rule(DiffPair{a.trimmed(), 1}, DiffPair{b.trimmed(), ZeroValue{}});
                 } else if (grad_b){
-                    out[i] = RuleStruct<T>::diff_rule(DiffPair{a.trimmed(), ZeroValue{}}, DiffPair{b.trimmed(), 1});
+                    out[i] = RuleStruct::diff_rule(DiffPair{a.trimmed(), ZeroValue{}}, DiffPair{b.trimmed(), 1});
                 } else {
-                    out[i] = RuleStruct<T>::diff_rule(DiffPair{a.trimmed(), ZeroValue{}}, DiffPair{b.trimmed(), ZeroValue{}});
+                    out[i] = RuleStruct::diff_rule(DiffPair{a.trimmed(), ZeroValue{}}, DiffPair{b.trimmed(), ZeroValue{}});
                 }
             }
         }
-        out.true_value = RuleStruct<T>::operation(a.trimmed(), b.trimmed());
+        out.true_value = RuleStruct::operation(a.trimmed(), b.trimmed());
         return out;
     }
 
     // Binary: (Dual, Seed)
-    template<template<typename> typename RuleStruct, typename T, int NVARS, int NORDER>
+    template<typename RuleStruct, typename T, int NVARS, int NORDER>
     XDIFF_INLINE_HOST_DEVICE
     static Dual<T, NVARS, NORDER, Layout::Nested>& 
     binary_assign_impl(Dual<T, NVARS, NORDER, Layout::Nested>& out,
@@ -215,18 +215,18 @@ struct NestedDualOperationHelper {
         if constexpr (NORDER > 0){
             for (size_t i = 0; i < a.nvars(); i++){
                 if (i == b.axis()){
-                    out[i] = RuleStruct<T>::diff_rule(DP{a.true_value, a[i]}, DiffPair{b.trimmed(), 1});
+                    out[i] = RuleStruct::diff_rule(DP{a.true_value, a[i]}, DiffPair{b.trimmed(), 1});
                 }else{
-                    out[i] = RuleStruct<T>::diff_rule(DP{a.true_value, a[i]}, DiffPair{b.trimmed(), ZeroValue{}});
+                    out[i] = RuleStruct::diff_rule(DP{a.true_value, a[i]}, DiffPair{b.trimmed(), ZeroValue{}});
                 }
             }
         }
-        out.true_value = RuleStruct<T>::operation(a.true_value, b.trimmed());
+        out.true_value = RuleStruct::operation(a.true_value, b.trimmed());
         return out;
     }
 
     // Binary: (Scalar, Dual)
-    template<template<typename> typename RuleStruct, typename F, typename T, int NVARS, int NORDER>
+    template<typename RuleStruct, typename F, typename T, int NVARS, int NORDER>
     requires (::xdiff::detail::isScalarOperand<F, T>)
     XDIFF_INLINE_HOST_DEVICE
     static Dual<T, NVARS, NORDER, Layout::Nested>& 
@@ -240,15 +240,15 @@ struct NestedDualOperationHelper {
 
         if constexpr (NORDER > 0){
             for (size_t i = 0; i < b.nvars(); i++){
-                out[i] = RuleStruct<T>::diff_rule(DP_A{a, ZeroValue{}}, DP_B{b.true_value, b[i]});
+                out[i] = RuleStruct::diff_rule(DP_A{a, ZeroValue{}}, DP_B{b.true_value, b[i]});
             }
         }
-        out.true_value = RuleStruct<T>::operation(a, b.true_value);
+        out.true_value = RuleStruct::operation(a, b.true_value);
         return out;
     }
 
     // Binary: (Dual, Scalar)
-    template<template<typename> typename RuleStruct, typename F, typename T, int NVARS, int NORDER>
+    template<typename RuleStruct, typename F, typename T, int NVARS, int NORDER>
     requires (::xdiff::detail::isScalarOperand<F, T>)
     XDIFF_INLINE_HOST_DEVICE
     static Dual<T, NVARS, NORDER, Layout::Nested>& 
@@ -262,15 +262,15 @@ struct NestedDualOperationHelper {
 
         if constexpr (NORDER > 0){
             for (size_t i = 0; i < a.nvars(); i++){
-                out[i] = RuleStruct<T>::diff_rule(DP_A{a.true_value, a[i]}, DP_B{b, ZeroValue{}});
+                out[i] = RuleStruct::diff_rule(DP_A{a.true_value, a[i]}, DP_B{b, ZeroValue{}});
             }
         }
-        out.true_value = RuleStruct<T>::operation(a.true_value, b);
+        out.true_value = RuleStruct::operation(a.true_value, b);
         return out;
     }
 
     // Binary: (Scalar, Seed)
-    template<template<typename> typename RuleStruct, typename F, typename T, int NVARS, int NORDER>
+    template<typename RuleStruct, typename F, typename T, int NVARS, int NORDER>
     requires (::xdiff::detail::isScalarOperand<F, T>)
     XDIFF_INLINE_HOST_DEVICE
     static Dual<T, NVARS, NORDER, Layout::Nested>&
@@ -283,18 +283,18 @@ struct NestedDualOperationHelper {
         if constexpr (NORDER > 0){
             for (size_t i = 0; i < b.nvars(); i++){
                 if (i == b.axis()){
-                    out[i] = RuleStruct<T>::diff_rule(DP_A{a, ZeroValue{}}, DiffPair{b.trimmed(), 1});
+                    out[i] = RuleStruct::diff_rule(DP_A{a, ZeroValue{}}, DiffPair{b.trimmed(), 1});
                 }else{
-                    out[i] = RuleStruct<T>::diff_rule(DP_A{a, ZeroValue{}}, DiffPair{b.trimmed(), ZeroValue{}});
+                    out[i] = RuleStruct::diff_rule(DP_A{a, ZeroValue{}}, DiffPair{b.trimmed(), ZeroValue{}});
                 }
             }
         }
-        out.true_value = RuleStruct<T>::operation(a, b.trimmed());
+        out.true_value = RuleStruct::operation(a, b.trimmed());
         return out;
     }
 
     // Binary: (Seed, Scalar)
-    template<template<typename> typename RuleStruct, typename F, typename T, int NVARS, int NORDER>
+    template<typename RuleStruct, typename F, typename T, int NVARS, int NORDER>
     requires (::xdiff::detail::isScalarOperand<F, T>)
     XDIFF_INLINE_HOST_DEVICE
     static Dual<T, NVARS, NORDER, Layout::Nested>&
@@ -307,18 +307,18 @@ struct NestedDualOperationHelper {
         if constexpr (NORDER > 0){
             for (size_t i = 0; i < a.nvars(); i++){
                 if (i == a.axis()){
-                    out[i] = RuleStruct<T>::diff_rule(DiffPair{a.trimmed(), 1}, DP_B{b, ZeroValue{}});
+                    out[i] = RuleStruct::diff_rule(DiffPair{a.trimmed(), 1}, DP_B{b, ZeroValue{}});
                 }else{
-                    out[i] = RuleStruct<T>::diff_rule(DiffPair{a.trimmed(), ZeroValue{}}, DP_B{b, ZeroValue{}});
+                    out[i] = RuleStruct::diff_rule(DiffPair{a.trimmed(), ZeroValue{}}, DP_B{b, ZeroValue{}});
                 }
             }
         }
-        out.true_value = RuleStruct<T>::operation(a.trimmed(), b);
+        out.true_value = RuleStruct::operation(a.trimmed(), b);
         return out;
     }
 
     // Free function wrappers
-    template<template<typename> typename RuleStruct, typename T, int NVARS, int NORDER>
+    template<typename RuleStruct, typename T, int NVARS, int NORDER>
     XDIFF_INLINE_HOST_DEVICE
     static Dual<T, NVARS, NORDER, Layout::Nested> 
     binary_op_impl(const Dual<T, NVARS, NORDER, Layout::Nested>& a,
@@ -328,7 +328,7 @@ struct NestedDualOperationHelper {
         return out;
     }
 
-    template<template<typename> typename RuleStruct, typename T, int NVARS, int NORDER>
+    template<typename RuleStruct, typename T, int NVARS, int NORDER>
     XDIFF_INLINE_HOST_DEVICE
     static Dual<T, NVARS, NORDER, Layout::Nested> 
     binary_op_impl(const Dual<T, NVARS, NORDER, Layout::Nested>& a,
@@ -338,7 +338,7 @@ struct NestedDualOperationHelper {
         return out;
     }
 
-    template<template<typename> typename RuleStruct, typename T, int NVARS, int NORDER>
+    template<typename RuleStruct, typename T, int NVARS, int NORDER>
     XDIFF_INLINE_HOST_DEVICE
     static Dual<T, NVARS, NORDER, Layout::Nested> 
     binary_op_impl(const Seed<T, NVARS, NORDER, Layout::Nested>& a,
@@ -348,7 +348,7 @@ struct NestedDualOperationHelper {
         return out;
     }
 
-    template<template<typename> typename RuleStruct, typename T, int NVARS, int NORDER>
+    template<typename RuleStruct, typename T, int NVARS, int NORDER>
     XDIFF_INLINE_HOST_DEVICE
     static Dual<T, NVARS, NORDER, Layout::Nested> 
     binary_op_impl(const Seed<T, NVARS, NORDER, Layout::Nested>& a,
@@ -358,7 +358,7 @@ struct NestedDualOperationHelper {
         return out;
     }
 
-    template<template<typename> typename RuleStruct, typename F, typename T, int NVARS, int NORDER>
+    template<typename RuleStruct, typename F, typename T, int NVARS, int NORDER>
     requires (::xdiff::detail::isScalarOperand<F, T>)
     XDIFF_INLINE_HOST_DEVICE
     static Dual<T, NVARS, NORDER, Layout::Nested> 
@@ -368,7 +368,7 @@ struct NestedDualOperationHelper {
         return out;
     }
 
-    template<template<typename> typename RuleStruct, typename F, typename T, int NVARS, int NORDER>
+    template<typename RuleStruct, typename F, typename T, int NVARS, int NORDER>
     requires (::xdiff::detail::isScalarOperand<F, T>)
     XDIFF_INLINE_HOST_DEVICE
     static Dual<T, NVARS, NORDER, Layout::Nested>
@@ -378,7 +378,7 @@ struct NestedDualOperationHelper {
         return out;
     }
 
-    template<template<typename> typename RuleStruct, typename F, typename T, int NVARS, int NORDER>
+    template<typename RuleStruct, typename F, typename T, int NVARS, int NORDER>
     requires (::xdiff::detail::isScalarOperand<F, T>)
     XDIFF_INLINE_HOST_DEVICE
     static Dual<T, NVARS, NORDER, Layout::Nested>
@@ -388,7 +388,7 @@ struct NestedDualOperationHelper {
         return out;
     }
 
-    template<template<typename> typename RuleStruct, typename F, typename T, int NVARS, int NORDER>
+    template<typename RuleStruct, typename F, typename T, int NVARS, int NORDER>
     requires (::xdiff::detail::isScalarOperand<F, T>)
     XDIFF_INLINE_HOST_DEVICE
     static Dual<T, NVARS, NORDER, Layout::Nested>
@@ -417,7 +417,7 @@ XDIFF_INLINE_HOST_DEVICE \
 Dual<T, NVARS, NORDER, Layout::Nested>& ASSIGN_NAME( \
     Dual<T, NVARS, NORDER, Layout::Nested>& out, \
     const Dual<T, NVARS, NORDER, Layout::Nested>& arg) { \
-    return xdiff::detail::NestedDualOperationHelper::unary_assign_impl<STRUCT>(out, arg); \
+    return xdiff::detail::NestedDualOperationHelper::unary_assign_impl<STRUCT<T>>(out, arg); \
 } \
 \
 template<typename T, int NVARS, int NORDER> \
@@ -425,20 +425,20 @@ XDIFF_INLINE_HOST_DEVICE \
 Dual<T, NVARS, NORDER, Layout::Nested>& ASSIGN_NAME( \
     Dual<T, NVARS, NORDER, Layout::Nested>& out, \
     const Seed<T, NVARS, NORDER, Layout::Nested>& arg) { \
-    return xdiff::detail::NestedDualOperationHelper::unary_assign_impl<STRUCT>(out, arg); \
+    return xdiff::detail::NestedDualOperationHelper::unary_assign_impl<STRUCT<T>>(out, arg); \
 } \
 \
 \
 template<typename T, int NVARS, int NORDER> \
 XDIFF_INLINE_HOST_DEVICE \
 auto NAME(const Dual<T, NVARS, NORDER, Layout::Nested>& arg) { \
-    return xdiff::detail::NestedDualOperationHelper::unary_op_impl<STRUCT>(arg); \
+    return xdiff::detail::NestedDualOperationHelper::unary_op_impl<STRUCT<T>>(arg); \
 }\
 \
 template<typename T, int NVARS, int NORDER> \
 XDIFF_INLINE_HOST_DEVICE \
 auto NAME(const Seed<T, NVARS, NORDER, Layout::Nested>& arg) { \
-    return xdiff::detail::NestedDualOperationHelper::unary_op_impl<STRUCT>(arg); \
+    return xdiff::detail::NestedDualOperationHelper::unary_op_impl<STRUCT<T>>(arg); \
 }
 
 
@@ -451,7 +451,7 @@ XDIFF_INLINE_HOST_DEVICE Dual<T,NVARS,NORDER,Layout::Nested>& ASSIGN_NAME( \
     Dual<T,NVARS,NORDER,Layout::Nested>& out, \
     const Dual<T,NVARS,NORDER,Layout::Nested>& a, \
     const Dual<T,NVARS,NORDER,Layout::Nested>& b){ \
-    return xdiff::detail::NestedDualOperationHelper::binary_assign_impl<STRUCT>(out, a, b); \
+    return xdiff::detail::NestedDualOperationHelper::binary_assign_impl<STRUCT<T>>(out, a, b); \
 } \
 \
 template<typename T, int NVARS, int NORDER> \
@@ -459,7 +459,7 @@ XDIFF_INLINE_HOST_DEVICE Dual<T,NVARS,NORDER,Layout::Nested>& ASSIGN_NAME( \
     Dual<T,NVARS,NORDER,Layout::Nested>& out, \
     const Seed<T,NVARS,NORDER,Layout::Nested>& a, \
     const Dual<T,NVARS,NORDER,Layout::Nested>& b){ \
-    return xdiff::detail::NestedDualOperationHelper::binary_assign_impl<STRUCT>(out, a, b); \
+    return xdiff::detail::NestedDualOperationHelper::binary_assign_impl<STRUCT<T>>(out, a, b); \
 } \
 \
 template<typename T, int NVARS, int NORDER> \
@@ -467,7 +467,7 @@ XDIFF_INLINE_HOST_DEVICE Dual<T,NVARS,NORDER,Layout::Nested>& ASSIGN_NAME( \
     Dual<T,NVARS,NORDER,Layout::Nested>& out, \
     const Dual<T,NVARS,NORDER,Layout::Nested>& a, \
     const Seed<T,NVARS,NORDER,Layout::Nested>& b){ \
-    return xdiff::detail::NestedDualOperationHelper::binary_assign_impl<STRUCT>(out, a, b); \
+    return xdiff::detail::NestedDualOperationHelper::binary_assign_impl<STRUCT<T>>(out, a, b); \
 } \
 \
 template<typename T, int NVARS, int NORDER> \
@@ -475,7 +475,7 @@ XDIFF_INLINE_HOST_DEVICE Dual<T,NVARS,NORDER,Layout::Nested>& ASSIGN_NAME( \
     Dual<T,NVARS,NORDER,Layout::Nested>& out, \
     const Seed<T,NVARS,NORDER,Layout::Nested>& a, \
     const Seed<T,NVARS,NORDER,Layout::Nested>& b){ \
-    return xdiff::detail::NestedDualOperationHelper::binary_assign_impl<STRUCT>(out, a, b); \
+    return xdiff::detail::NestedDualOperationHelper::binary_assign_impl<STRUCT<T>>(out, a, b); \
 } \
 \
 \
@@ -485,7 +485,7 @@ XDIFF_INLINE_HOST_DEVICE Dual<T,NVARS,NORDER,Layout::Nested>& ASSIGN_NAME( \
     Dual<T,NVARS,NORDER,Layout::Nested>& out, \
     const F& a,\
     const Dual<T,NVARS,NORDER,Layout::Nested>& b){ \
-    return xdiff::detail::NestedDualOperationHelper::binary_assign_impl<STRUCT>(out, a, b); \
+    return xdiff::detail::NestedDualOperationHelper::binary_assign_impl<STRUCT<T>>(out, a, b); \
 } \
 \
 \
@@ -495,7 +495,7 @@ XDIFF_INLINE_HOST_DEVICE Dual<T,NVARS,NORDER,Layout::Nested>& ASSIGN_NAME( \
     Dual<T,NVARS,NORDER,Layout::Nested>& out, \
     const Dual<T,NVARS,NORDER,Layout::Nested>& a, \
     const F& b){ \
-    return xdiff::detail::NestedDualOperationHelper::binary_assign_impl<STRUCT>(out, a, b); \
+    return xdiff::detail::NestedDualOperationHelper::binary_assign_impl<STRUCT<T>>(out, a, b); \
 } \
 \
 \
@@ -505,7 +505,7 @@ XDIFF_INLINE_HOST_DEVICE Dual<T,NVARS,NORDER,Layout::Nested>& ASSIGN_NAME( \
     Dual<T,NVARS,NORDER,Layout::Nested>& out, \
     const F& a,\
     const Seed<T,NVARS,NORDER,Layout::Nested>& b){ \
-    return xdiff::detail::NestedDualOperationHelper::binary_assign_impl<STRUCT>(out, a, b); \
+    return xdiff::detail::NestedDualOperationHelper::binary_assign_impl<STRUCT<T>>(out, a, b); \
 } \
 \
 \
@@ -515,7 +515,7 @@ XDIFF_INLINE_HOST_DEVICE Dual<T,NVARS,NORDER,Layout::Nested>& ASSIGN_NAME( \
     Dual<T,NVARS,NORDER,Layout::Nested>& out, \
     const Seed<T,NVARS,NORDER,Layout::Nested>& a, \
     const F& b){ \
-    return xdiff::detail::NestedDualOperationHelper::binary_assign_impl<STRUCT>(out, a, b); \
+    return xdiff::detail::NestedDualOperationHelper::binary_assign_impl<STRUCT<T>>(out, a, b); \
 } \
 \
 \
@@ -523,21 +523,21 @@ template<typename T, int NVARS, int NORDER> \
 XDIFF_INLINE_HOST_DEVICE auto NAME( \
     const Dual<T,NVARS,NORDER,Layout::Nested>& a, \
     const Dual<T,NVARS,NORDER,Layout::Nested>& b){ \
-    return xdiff::detail::NestedDualOperationHelper::binary_op_impl<STRUCT>(a, b); \
+    return xdiff::detail::NestedDualOperationHelper::binary_op_impl<STRUCT<T>>(a, b); \
 } \
 \
 template<typename T, int NVARS, int NORDER> \
 XDIFF_INLINE_HOST_DEVICE auto NAME( \
     const Seed<T,NVARS,NORDER,Layout::Nested>& a, \
     const Dual<T,NVARS,NORDER,Layout::Nested>& b){ \
-    return xdiff::detail::NestedDualOperationHelper::binary_op_impl<STRUCT>(a, b); \
+    return xdiff::detail::NestedDualOperationHelper::binary_op_impl<STRUCT<T>>(a, b); \
 } \
 \
 template<typename T, int NVARS, int NORDER> \
 XDIFF_INLINE_HOST_DEVICE auto NAME( \
     const Dual<T,NVARS,NORDER,Layout::Nested>& a, \
     const Seed<T,NVARS,NORDER,Layout::Nested>& b){ \
-    return xdiff::detail::NestedDualOperationHelper::binary_op_impl<STRUCT>(a, b); \
+    return xdiff::detail::NestedDualOperationHelper::binary_op_impl<STRUCT<T>>(a, b); \
 } \
 \
 \
@@ -545,7 +545,7 @@ template<typename T, int NVARS, int NORDER> \
 XDIFF_INLINE_HOST_DEVICE auto NAME( \
     const Seed<T,NVARS,NORDER,Layout::Nested>& a, \
     const Seed<T,NVARS,NORDER,Layout::Nested>& b){ \
-    return xdiff::detail::NestedDualOperationHelper::binary_op_impl<STRUCT>(a, b); \
+    return xdiff::detail::NestedDualOperationHelper::binary_op_impl<STRUCT<T>>(a, b); \
 } \
 \
 template<typename F, typename T, int NVARS, int NORDER> \
@@ -553,14 +553,14 @@ requires (::xdiff::detail::isScalarOperand<F, T>) \
 XDIFF_INLINE_HOST_DEVICE auto NAME( \
     const F& a, \
     const Dual<T,NVARS,NORDER,Layout::Nested>& b){ \
-    return xdiff::detail::NestedDualOperationHelper::binary_op_impl<STRUCT>(a, b); \
+    return xdiff::detail::NestedDualOperationHelper::binary_op_impl<STRUCT<T>>(a, b); \
 } \
 template<typename F, typename T, int NVARS, int NORDER> \
 requires (::xdiff::detail::isScalarOperand<F, T>) \
 XDIFF_INLINE_HOST_DEVICE auto NAME( \
     const Dual<T,NVARS,NORDER,Layout::Nested>& a, \
     const F& b){ \
-    return xdiff::detail::NestedDualOperationHelper::binary_op_impl<STRUCT>(a, b); \
+    return xdiff::detail::NestedDualOperationHelper::binary_op_impl<STRUCT<T>>(a, b); \
 } \
 \
 template<typename F, typename T, int NVARS, int NORDER> \
@@ -568,14 +568,14 @@ requires (::xdiff::detail::isScalarOperand<F, T>) \
 XDIFF_INLINE_HOST_DEVICE auto NAME( \
     const F& a, \
     const Seed<T,NVARS,NORDER,Layout::Nested>& b){ \
-    return xdiff::detail::NestedDualOperationHelper::binary_op_impl<STRUCT>(a, b); \
+    return xdiff::detail::NestedDualOperationHelper::binary_op_impl<STRUCT<T>>(a, b); \
 } \
 template<typename F, typename T, int NVARS, int NORDER> \
 requires (::xdiff::detail::isScalarOperand<F, T>) \
 XDIFF_INLINE_HOST_DEVICE auto NAME( \
     const Seed<T,NVARS,NORDER,Layout::Nested>& a, \
     const F& b){ \
-    return xdiff::detail::NestedDualOperationHelper::binary_op_impl<STRUCT>(a, b); \
+    return xdiff::detail::NestedDualOperationHelper::binary_op_impl<STRUCT<T>>(a, b); \
 }
 
 
