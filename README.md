@@ -186,6 +186,29 @@ Results match analytical expressions to machine precision. Requesting derivative
 
 ---
 
+## Calling math functions: `XDIFF_USING_MATH`
+
+Write `XDIFF_USING_MATH;` in every namespace of yours that calls `abs()`, `sin()`, `pow()` …
+**unqualified**. One line per namespace, or once at global scope:
+
+```cpp
+#include <xdiff/xdiff.hpp>
+
+namespace myproject {
+XDIFF_USING_MATH;
+
+template<typename T>
+T f(const T& x){
+    // scalar, Dual or a type from the external dependencies
+    return abs(x) * sqrt(x);
+}
+
+}
+```
+
+
+---
+
 ## Runtime Number of Variables
 
 When `Nvars` isn't known at compile time, use `Nvars = 0` with `Layout::Nested` layout:
