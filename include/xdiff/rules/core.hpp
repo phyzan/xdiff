@@ -7,6 +7,7 @@
 
 namespace xdiff::detail::rules{
 
+XDIFF_USING_MATH;
 
 
 template<typename T, typename Derived>

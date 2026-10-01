@@ -2,6 +2,7 @@
 #define XDIFF_DUAL_HPP
 
 
+#include "../math.hpp" // IWYU pragma: keep
 #include "../tools.hpp"
 #include <cstdint>
 #include <ostream>
@@ -972,8 +973,7 @@ std::ostream& operator<<(std::ostream& os, const XDIFF_SEED& a){
 }
 
 
-// Import standard math functions into xdiff namespace for ADL
-using std::abs, std::pow, std::log, std::log10, std::sqrt, std::exp, std::sin, std::cos, std::tan, std::abs, std::sinh, std::cosh, std::tanh, std::erf, std::asin, std::acos, std::atan, std::asinh, std::acosh, std::atanh;
+XDIFF_USING_MATH;
 
 } // namespace xdiff
 
