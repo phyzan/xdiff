@@ -239,6 +239,12 @@ lazex::LazyType<Dual<double, 0, 2, Layout::Nested>>
 
 See the `Lazex` submodule for details.
 
+#### No need for `lazex::update_workers`
+
+`LazeX` reuses cached scratch values ("workers") between evaluations, and asks you to call `lazex::update_workers<T>()` after changing global state that affects `T`. This is never required for xdiff `Dual` types. After `Dual::set_default_nvars()`, or after changing the default `mpfr::mpreal` precision, cached `Dual` workers may keep the old number of variables or precision. That never affects results: every `Dual` operation first resizes its output to its operands' number of variables, then assigns each component a freshly computed value, which carries the operands' precision. A stale worker is therefore corrected the first time it is reused.
+
+> **Note:** This applies to `Dual` workers only. A plain `lazex::LazyType<mpfr::mpreal>` is computed in place at its workers' precision, so change the precision with `lazex::set_default_mpreal_prec()` as `LazeX` mentions in its `README`, which also updates those workers.
+
 ---
 
 ## CMake Options
