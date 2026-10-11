@@ -2,7 +2,57 @@
 #define XDIFF_RULES_CORE_HPP
 
 #include <cmath>
-#include "../dual/dual.hpp" // IWYU pragma: keep
+#include <lazex/lazex.hpp>
+#include "../backend.hpp"
+
+#define XDIFF_USING_MATH LAZEX_USING_MATH
+
+namespace xdiff{
+
+// So that xdiff's own generic code gets the same overload set it asks users to adopt,
+// independently of which headers a translation unit happened to include first.
+LAZEX_USING_MATH;
+
+struct ZeroValue{};
+
+namespace traits{
+
+template<typename F>
+concept isAnyZero = std::is_base_of_v<ZeroValue, std::decay_t<F>>;
+
+} // namespace xdiff::traits
+
+
+template<typename F, typename DF>
+struct DiffPair{
+
+    F value;   ///< The function value
+    DF grad;   ///< The derivative value
+
+    /// @brief Returns true if this derivative is trivially zero (compile-time optimization)
+    XDIFF_INLINE_HOST_DEVICE
+    static constexpr bool isTrivial() {
+        return xdiff::traits::isAnyZero<DF>;
+    }
+};
+
+/// @brief CTAD guide for DiffPair to preserve reference types
+template<typename F, typename DF>
+DiffPair(F&&, DF&&)
+-> DiffPair<
+    std::conditional_t<
+        std::is_lvalue_reference_v<F>,
+        F,
+        std::remove_reference_t<F>
+    >,
+    std::conditional_t<
+        std::is_lvalue_reference_v<DF>,
+        DF,
+        std::remove_reference_t<DF>
+    >
+>;
+
+} // namespace xdiff
 
 
 namespace xdiff::detail::rules{

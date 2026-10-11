@@ -1,9 +1,11 @@
 #ifndef XDIFF_DUAL_FLAT_HPP
 #define XDIFF_DUAL_FLAT_HPP
 
-#include "lexicographic.hpp"
+
 #include <array>
 #include <concepts>
+#include "lexicographic.hpp"
+#include "../dual.hpp"
 
 
 #ifdef XDIFF_FAST

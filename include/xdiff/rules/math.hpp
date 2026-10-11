@@ -512,16 +512,9 @@ struct Erf : MathFunc<Erf<T>, T>{
     template<typename F, typename DF>
     XDIFF_INLINE_HOST_DEVICE
     static auto special_diff(const F& f, const DF& df) {
-        return M_2_SQRTPI * df * exp(-f * f);
+        return constants<T>::two_over_sqrtpi() * df * exp(-f * f);
     }
 };
-
-
-
-
-
-
-
 
 } // namespace xdiff::detail::rules
 

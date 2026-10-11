@@ -2,7 +2,7 @@
 #define XDIFF_DUAL_HPP
 
 
-#include "../math.hpp" // IWYU pragma: keep
+#include "../rules/core.hpp"
 #include "../tools.hpp"
 #include <cstdint>
 #include <ostream>
@@ -56,51 +56,6 @@ template<typename F, typename T>
 concept isScalarOperand = std::is_convertible_v<std::decay_t<F>, T>;
 
 } // namespace xdiff::detail
-
-
-template<typename F, typename DF>
-struct DiffPair;
-
-
-struct ZeroValue{};
-
-
-namespace traits{
-
-template<typename F>
-concept isAnyZero = std::is_base_of_v<ZeroValue, std::decay_t<F>>;
-
-} // namespace xdiff::traits
-
-
-template<typename F, typename DF>
-struct DiffPair{
-
-    F value;   ///< The function value
-    DF grad;   ///< The derivative value
-
-    /// @brief Returns true if this derivative is trivially zero (compile-time optimization)
-    XDIFF_INLINE_HOST_DEVICE
-    static constexpr bool isTrivial() {
-        return xdiff::traits::isAnyZero<DF>;
-    }
-};
-
-/// @brief CTAD guide for DiffPair to preserve reference types
-template<typename F, typename DF>
-DiffPair(F&&, DF&&)
--> DiffPair<
-    std::conditional_t<
-        std::is_lvalue_reference_v<F>,
-        F,
-        std::remove_reference_t<F>
-    >,
-    std::conditional_t<
-        std::is_lvalue_reference_v<DF>,
-        DF,
-        std::remove_reference_t<DF>
-    >
->;
 
 
 template<typename Derived, typename T, int NVARS, Layout LY>
@@ -976,6 +931,18 @@ std::ostream& operator<<(std::ostream& os, const XDIFF_SEED& a){
 XDIFF_USING_MATH;
 
 } // namespace xdiff
+
+
+namespace lazex::detail{
+
+template<typename T, int NVARS, int NORDER, ::xdiff::Layout LY>
+struct constants<::xdiff::Dual<T, NVARS, NORDER, LY>> {
+    using type = ::xdiff::Dual<T, NVARS, NORDER, LY>;
+    static type pi()              { return type(constants<T>::pi()); }
+    static type two_over_sqrtpi() { return type(constants<T>::two_over_sqrtpi()); }
+};
+
+} // namespace lazex::detail
 
 
 // =============================================================================

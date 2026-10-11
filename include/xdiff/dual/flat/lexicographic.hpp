@@ -2,6 +2,7 @@
 #define XDIFF_DUAL_FLAT_LEXICOGRAPHIC_HPP
 
 #include "itertools.hpp"
+#include "../../tools.hpp"
 
 namespace xdiff {
 

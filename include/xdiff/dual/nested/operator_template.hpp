@@ -3,6 +3,7 @@
 
 #include <iostream> // IWYU pragma: keep
 #include "../../rules/math.hpp" // IWYU pragma: keep
+#include "../dual.hpp"
 
 #define XDIFF_ASSERT_REC_DUAL_BINARY_OPERATION(a, b) \
     assert(a.nvars() == b.nvars() && "All RecursiveDuals must have the same number of derivatives"); \
