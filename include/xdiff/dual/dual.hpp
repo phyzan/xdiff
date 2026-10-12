@@ -10,7 +10,9 @@
 
 #define XDIFF_DUAL Dual<T, NVARS, NORDER, LY>
 #define XDIFF_SEED Seed<T, NVARS, NORDER, LY>
-#define XDIFF_NO_DEF {static_assert(false, "This function is not defined for this type of Dual");}
+
+// The static_assert is always false but only fires if the function is instantiated
+#define XDIFF_NO_DEF {static_assert(sizeof(T) == 0, "This function is not defined for this type of Dual");}
 
 namespace xdiff{
 
