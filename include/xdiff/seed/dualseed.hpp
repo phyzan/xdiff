@@ -41,10 +41,13 @@ public:
     using TrimmedType = std::conditional_t<(NORDER > 1), Seed<T, NVARS, NORDER-1, LY>, T>;
 
     XDIFF_INLINE_HOST_DEVICE
-    Seed(T value, size_t axis, size_t nvars) : value_(std::move(value)), axis_(axis), nvars_(nvars) {
+    Seed(const T& value, size_t axis, size_t nvars) : value_(value), axis_(axis), nvars_(nvars) {
         assert((NVARS == -1 || nvars == size_t(NVARS)) && "nvars must match NVARS for a compile-time known number of variables in Seed");
         assert(axis < this->nvars() && "Axis out of bounds");
     }
+
+    XDIFF_INLINE_HOST_DEVICE
+    Seed(T&& value, size_t axis, size_t nvars) = delete;
 
     XDIFF_INLINE_HOST_DEVICE
     constexpr const T& value() const{
@@ -62,7 +65,7 @@ public:
      * @return A Seed of order NORDER-1, or the scalar value when no order is left.
      */
     XDIFF_INLINE_HOST_DEVICE
-    decltype(auto) trimmed() const{
+    auto trimmed() const{
         if constexpr (NORDER > 1){
             return TrimmedType{value_, axis_, nvars()};
         } else {
@@ -95,7 +98,7 @@ public:
 
 private:
 
-    T value_;
+    const T& value_;
     size_t axis_;
     [[no_unique_address]] std::conditional_t<NVARS == -1, size_t, detail::UnusedSize> nvars_;
 };

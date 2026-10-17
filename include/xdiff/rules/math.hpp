@@ -311,7 +311,7 @@ struct Csc : MathFunc<Csc<T>, T>{
     XDIFF_INLINE_HOST_DEVICE
     static auto special_diff(const F& f, const DF& df) {
         auto sin_f = sin(f);
-        return -df / (sin_f * sin_f);
+        return -df * cos(f) / (sin_f * sin_f);
     }
 };
 
