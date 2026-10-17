@@ -143,7 +143,7 @@ XDIFF_INLINE_DEVICE constexpr decltype(auto) pack_elem(FirstType&& x0, ArgType&&
 
 
 template<typename Cls, typename Derived>
-using GetDerived = std::conditional_t<(std::is_same_v<Derived, void>), Cls, Derived>;
+using derived_t = std::conditional_t<(std::is_same_v<Derived, void>), Cls, Derived>;
 
 } // namespace xdiff::tools
 

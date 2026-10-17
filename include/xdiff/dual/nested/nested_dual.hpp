@@ -104,11 +104,11 @@ protected:
 
 // RecursiveDual for compile-time known number of variables.
 template<typename T, typename G, int NVARS, typename Derived>
-class  RecursiveDual : public RecursiveDualBase<xdiff::tools::GetDerived<RecursiveDual<T, G, NVARS, Derived>, Derived>, T, G, NVARS> {
+class  RecursiveDual : public RecursiveDualBase<xdiff::tools::derived_t<RecursiveDual<T, G, NVARS, Derived>, Derived>, T, G, NVARS> {
 
     static_assert(NVARS >= 0, "NVARS must be non-negative for a compile-time known number of variables in RecursiveDual");
 
-    using Base = RecursiveDualBase<xdiff::tools::GetDerived<RecursiveDual<T, G, NVARS, Derived>, Derived>, T, G, NVARS>;
+    using Base = RecursiveDualBase<xdiff::tools::derived_t<RecursiveDual<T, G, NVARS, Derived>, Derived>, T, G, NVARS>;
 
 public:
 
@@ -186,9 +186,9 @@ private:
 
 // RecursiveDual for runtime known number of variables.
 template<typename T, typename G, typename Derived>
-class RecursiveDual<T, G, -1, Derived> : public RecursiveDualBase<xdiff::tools::GetDerived<RecursiveDual<T, G, -1, Derived>, Derived>, T, G, -1> {
+class RecursiveDual<T, G, -1, Derived> : public RecursiveDualBase<xdiff::tools::derived_t<RecursiveDual<T, G, -1, Derived>, Derived>, T, G, -1> {
 
-    using Base = RecursiveDualBase<xdiff::tools::GetDerived<RecursiveDual<T, G, -1, Derived>, Derived>, T, G, -1>;
+    using Base = RecursiveDualBase<xdiff::tools::derived_t<RecursiveDual<T, G, -1, Derived>, Derived>, T, G, -1>;
 
 public:
 

@@ -55,7 +55,7 @@ namespace detail{
  * differentiate it. It also keeps this header independent of the lazy library.
  */
 template<typename F, typename T>
-concept isScalarOperand = std::is_convertible_v<std::decay_t<F>, T>;
+concept isScalarOperand = std::is_convertible_v<std::remove_cvref_t<F>, T>;
 
 } // namespace xdiff::detail
 
@@ -396,56 +396,6 @@ XDIFF_HOST_DEVICE XDIFF_DUAL& assign_pow(XDIFF_DUAL& /*out*/, const F& /*a*/, co
 template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_pow(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
-
-
-// ---------------------- Compound assignment operations ------------------------
-
-
-// Addition
-template<typename T, int NVARS, int NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_add(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
-
-template<typename T, int NVARS, int NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_add(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
-
-template<typename F, typename T, int NVARS, int NORDER, Layout LY>
-requires (detail::isScalarOperand<F, T>)
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_add(XDIFF_DUAL& /*out*/, const F& /*arg*/) XDIFF_NO_DEF;
-
-// Subtraction
-template<typename T, int NVARS, int NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_sub(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
-
-template<typename T, int NVARS, int NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_sub(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
-
-template<typename F, typename T, int NVARS, int NORDER, Layout LY>
-requires (detail::isScalarOperand<F, T>)
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_sub(XDIFF_DUAL& /*out*/, const F& /*arg*/) XDIFF_NO_DEF;
-
-// Multiplication
-template<typename T, int NVARS, int NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_mul(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
-
-template<typename T, int NVARS, int NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_mul(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
-
-template<typename F, typename T, int NVARS, int NORDER, Layout LY>
-requires (detail::isScalarOperand<F, T>)
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_mul(XDIFF_DUAL& /*out*/, const F& /*arg*/) XDIFF_NO_DEF;
-
-// Division
-template<typename T, int NVARS, int NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_div(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*arg*/) XDIFF_NO_DEF;
-
-template<typename T, int NVARS, int NORDER, Layout LY>
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_div(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*arg*/) XDIFF_NO_DEF;
-
-template<typename F, typename T, int NVARS, int NORDER, Layout LY>
-requires (detail::isScalarOperand<F, T>)
-XDIFF_HOST_DEVICE XDIFF_DUAL& assign_compound_div(XDIFF_DUAL& /*out*/, const F& /*arg*/) XDIFF_NO_DEF;
-
-
 
 
 // -------------------------------- Operator overloads --------------------------------
