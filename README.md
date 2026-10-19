@@ -4,7 +4,6 @@
 
 ![C++20](https://img.shields.io/badge/C%2B%2B-20-blue.svg?style=flat&logo=c%2B%2B)
 ![Header Only](https://img.shields.io/badge/Header-Only-green.svg?style=flat)
-![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat)
 ![GPU](https://img.shields.io/badge/GPU-CUDA%20%7C%20HIP%20%7C%20SYCL-orange.svg?style=flat)
 
 **A modular C++20 library for arbitrary-order automatic differentiation**
@@ -69,48 +68,8 @@ T f(const T& x, const T& y) {
 - **Multivariate Support** — Compile-time or runtime number of variables
 - **Expression Simplification** — Constant folding, identity elimination
 - **GPU Support** — CUDA, HIP, and SYCL backends
-- **Modular Architecture** — Clean separation across headers
-- **Zero Runtime Overhead** — Optimizations happen at compile time
 - **Header-Only** — Just include and use
-- **Exact Derivatives** — Analytical, not numerical approximations
 
----
-
-## Installation
-
-Clone and initialize submodules:
-```bash
-git submodule update --init --recursive
-```
-
-The [LazeX](https://github.com/phyzan/lazex) submodule maximizes performance for runtime-sized derivatives (avoiding heap allocation bottlenecks).
-
-**Linking via CMake:**
-```cmake
-add_subdirectory(path/to/xdiff)
-target_link_libraries(your_target PRIVATE xdiff)
-```
-This gives you `<xdiff/...>` and `<lazex/...>` includes, the required C++20 standard, and the [options](#CMake-Options) below (toggle with e.g. `-DXDIFF_FAST=ON`).
-
-**Syntax highlighting (clangd):** configure the build from the repo root so `compile_commands.json` ends up directly in `build/`, which clangd discovers automatically:
-```bash
-cmake -S . -B build
-```
-or, if you want to compile with some optimization macros enabled:
-```bash
-cmake -S . -B build -DXDIFF_LAZY_NESTED_DUAL=ON -DXDIFF_FAST=ON -DXDIFF_SCALAR_OPTIMIZATIONS=ON
-```
-
-**Running the benchmark:**
-```bash
-cmake --build build
-./build/benchmark 100000
-```
-
-Then include:
-```cpp
-#include <xdiff/xdiff.hpp>
-```
 
 ---
 
@@ -118,24 +77,40 @@ Then include:
 
 The main type:
 ```cpp
-template<typename T, size_t Nvars, size_t Norder, Layout LY>
+template<typename T, typename GD, int Order>
 class Dual;
+```
+The class stores a main value, and an abstract object that holds the derivative information. The object can be e.g. a `std::array<double, 4>` when the vector-space is 4-dimensional (4 variable to differentiate w.r.t), but can also be any other object, as long as the information on how to access concrete elements of type `T` is given.
+
+More concretely, the `GD` must be a struct of the form:
+
+```cpp
+struct GradientDescriptor{
+
+    template<typanem T>
+    using grad_type = std::array<T, 4>;
+
+    template<typename F, typename U, typename... Rest>
+    static void zip(F&& f, grad_type<U>& out, Rest&&... rest){
+        for (size_t i=0; i<4; i++){
+            f(out[i], rest[i]...);
+        }
+    }
+};
 ```
 
 **Template parameters:**
 | Parameter | Description |
 |-----------|-------------|
 | `T` | Underlying numeric type (`double`, `float`, etc.) |
-| `Nvars` | Number of independent variables (0 = runtime) |
-| `Norder` | Maximum differentiation order |
-| `LY` | Layout (see below) |
+| `GD` | A struct describing the gradient holder |
+| `Order` | Maximum differentiation order |
 
-**Layout:**
+This means that the GradientDescriptor struct must have a templated `grad_type` alias, referencing the type of the derivative holder, and a `zip` function, that takes as input a function or a lambda `f`, and at least one gradient `out`. The `rest` parameter pack is also a pack of `grad_type` objects, possibly of different template parameter T, and could be `const grad_type&` unlike `out` that is a modifiable reference.
 
-| Type | Description |
-|------|-------------|
-| `Layout::Nested` | Straightforward recursive implementation. Longer compile times, more memory. Supports runtime `Nvars` (set `Nvars = 0`). |
-| `Layout::Flat` | Compact layout. Near-optimal performance for small `Nvars`/`Norder`. Compile-time only. |
+The zip function must call the input function `f` for all elements of each gradient. Essentially the `zip` function tells the abstract `Dual` class how to access the elements of a gradient `grad_type`.
+
+Concrete implementations using `std::array` and `std::vector` are provided in the `xdiff` namespace.
 
 ---
 
@@ -143,42 +118,43 @@ class Dual;
 
 Compile with:
 ```bash
-g++ -std=c++20 -Iinclude -Iexternal/lazex/include test.cpp -o test
+g++ -std=c++20 -Iinclude test.cpp -o test
 ```
 
 ```cpp
 #include <xdiff/xdiff.hpp>
 
-using namespace xdiff;
+using T = double;
 
-template<typename T>
-T f(const T& x, const T& y, const T& z) {
-    return x*(1 - y) + sin(y/(x+z));
-}
 
-int main() {
-    using D = Dual<double, 3, 2, Layout::Nested>;
+int main(){
 
-    D x(1.0, {.axis = 0}); // gradient: {1, 0, 0}
-    D y(2.0, {.axis = 1}); // gradient: {0, 1, 0}
-    D z(3.0, {.axis = 2}); // gradient: {0, 0, 1}
+    // Assume the state vector is (x, y, z) = (1, 2, 3)
+    // This means that the gradient of x is (1, 0, 0),
+    // the gradient of y is (0, 1, 0) and of z is (0, 0, 1)
+    // It is important that the gradient and the state vector are
+    // the same object types.
+    std::array<T, 3> state {1, 2, 3};
 
-    // Constants (no derivatives):
-    // D c(5.0);  or  D c(5.0, {.axis = -1});
+    // Now seeds[1] is the same as y, but also holds the information
+    // that its gradient is (0, 1, 0)
 
-    D res = f(x, y, z);
+    // The "4" means storing up to 4th order derivatives
+    auto seeds = xdiff::make_seeds<T, xdiff::StaticState<3>, 4>(state);
 
-    // First derivatives
-    std::cout << "df/dx = " << res.get_diff_wrt(0) << "\n";
-    std::cout << "df/dy = " << res.get_diff_wrt(1) << "\n";
-    std::cout << "df/dz = " << res.get_diff_wrt(2) << "\n";
+    // Convenience alias class that allows for easier access
+    // for higher order derivatives
+    auto x = seeds[0];
+    auto y = seeds[1];
+    auto z = seeds[2];
 
-    // Second derivatives
-    std::cout << "d²f/dx² = " << res.get_diff_wrt(0, 0) << "\n";
-    std::cout << "d²f/dxdy = " << res.get_diff_wrt(0, 1) << "\n";
-    // ... etc
+    auto f = x*x/(1.3 - tan(z)*y) + sin(x-y/(z*z));
 
-    return 0;
+    // Convenience alias class that allows for easier access
+    // for higher order derivatives
+    xdiff::StaticDual<T, 3, 4> g = f;
+
+    std::cout << "d^4f/(dxdxdzdy) = " << g.diff(0, 0, 2, 1) << std::endl;
 }
 ```
 
@@ -205,64 +181,3 @@ T f(const T& x){
 
 }
 ```
-
-
----
-
-## Runtime Number of Variables
-
-When `Nvars` isn't known at compile time, use `Nvars = 0` with `Layout::Nested` layout:
-
-```cpp
-Dual<double, 0, 2, Layout::Nested> x(1.0, {.axis = 0, .nvars = 3}); // stores {value=1.0, gradient={1,0,0}, and hessian={{0,0,0},{0,0,0},{0,0,0}}}
-```
-
-**Notes:**
-- Uses heap allocation (`std::vector`) (avoid in performance-critical code)
-- Not compatible with GPU backends
-- If `.nvars` omitted, uses the static default (settable via `Dual::set_default_nvars()`)
-
-> **Warning:** Interacting `Dual` objects must have matching `Nvars`, `Norder`, and `Layout`. Compile-time mismatches cause errors; runtime mismatches trigger assertions.
-
-### Optimizing Runtime Performance
-
-Large expressions with runtime `Nvars` are expensive due to heap allocations. Enable lazy evaluation:
-
-```bash
-g++ -DXDIFF_LAZY_NESTED_DUAL ...
-```
-
-For maximum performance, also use `lazex::LazyType` instead of `Dual`:
-```cpp
-lazex::LazyType<Dual<double, 0, 2, Layout::Nested>>
-```
-
-See the `Lazex` submodule for details.
-
-#### No need for `lazex::update_workers`
-
-`LazeX` reuses cached scratch values ("workers") between evaluations, and asks you to call `lazex::update_workers<T>()` after changing global state that affects `T`. This is never required for xdiff `Dual` types. After `Dual::set_default_nvars()`, or after changing the default `mpfr::mpreal` precision, cached `Dual` workers may keep the old number of variables or precision. That never affects results: every `Dual` operation first resizes its output to its operands' number of variables, then assigns each component a freshly computed value, which carries the operands' precision. A stale worker is therefore corrected the first time it is reused.
-
-> **Note:** This applies to `Dual` workers only. A plain `lazex::LazyType<mpfr::mpreal>` is computed in place at its workers' precision, so change the precision with `lazex::set_default_mpreal_prec()` as `LazeX` mentions in its `README`, which also updates those workers.
-
----
-
-## CMake Options
-
-| Macro | Effect |
-|-------|--------|
-| `XDIFF_LAZY_NESTED_DUAL` | Lazy evaluation for `Nested` with `Nvars = 0`. Avoids intermediate heap allocations. |
-| `XDIFF_FAST` | Aggressive inlining for `Flat` layout. Recommended for `Norder ≤ 3`. |
-| `XDIFF_LEIBNIZ_OPT` | Iterative Leibniz-rule formula for `Flat` higher-order derivatives. It will reduce compile time for large differentiation order, but may decrease performance (mainly when compiling with `g++`) |
-| `XDIFF_SCALAR_OPTIMIZATIONS` | Optimized `Dual`-scalar operations for `Flat` layout. |
-
-See useful [options](https://github.com/phyzan/lazex#CMake-Options) for the `lazex` submodule.
-
-
-For higher-order derivatives, prefer using the `clang++` compiler when compiling with `-O3` and `-DXDIFF_FAST`, as it inlines more aggressively and faster than `g++` does, when testing the `Layout::Flat` template parameter.
-
----
-
-## License
-
-MIT License

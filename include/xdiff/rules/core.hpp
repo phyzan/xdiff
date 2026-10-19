@@ -5,8 +5,6 @@
 #include <lazex/lazex.hpp>
 #include "../backend.hpp"
 
-#define XDIFF_USING_MATH LAZEX_USING_MATH
-
 namespace xdiff{
 
 // So that xdiff's own generic code gets the same overload set it asks users to adopt,
@@ -57,8 +55,6 @@ DiffPair(F&&, DF&&)
 
 namespace xdiff::detail::rules{
 
-XDIFF_USING_MATH;
-
 
 template<typename T, typename Derived>
 struct BaseOperand{
@@ -73,7 +69,7 @@ struct BaseOperand{
 
     template<typename... F, typename... DF>
     XDIFF_INLINE_HOST_DEVICE
-    decltype(auto) diff_rule(const DiffPair<F, DF>&... pairs) const {
+    static decltype(auto) diff_rule(const DiffPair<F, DF>&... pairs) {
         return Derived::diff_rule(pairs...);
     }
 
