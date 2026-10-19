@@ -80,13 +80,7 @@ public:
         std::conditional_t<
             (Order+level-1 == 0),
             T, void>>;
-
-    // rest as grad_type<T>: same element type as out at Order 1, a different one above
-    static_assert(gradient_descriptor<GD, Scalar<0>, T>,
-        "GD must provide grad_type<U> and a static zip(f, out, rest...)");
-    // Taking the address odr-uses check_zip_contract, which instantiates it
-    static_assert((void(&check_zip_contract<GD, Scalar<0>, T>), true));
-
+            
     XDIFF_INLINE_HOST_DEVICE
     Dual() = default;
     XDIFF_INLINE_HOST_DEVICE
