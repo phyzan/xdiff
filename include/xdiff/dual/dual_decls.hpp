@@ -27,6 +27,45 @@ SeedState<T, GD, Order> make_seeds(const typename GD::template grad_type<T>& /*s
 template<typename U, typename T>
 concept converts_to = std::constructible_from<T, U>;
 
+// ------- Gradient descriptor (GD) contract --------
+// GD::grad_type<U> holds one U per state component, and GD::zip(f, out, rest...)
+// calls f once per component with the actual elements: those of `out` (a
+// grad_type<U>) as U&, those of each grad_type<V> in `rest` as V, const or not,
+// by reference or by value. V may differ from U. No proxies, no conversions.
+template<typename U, typename... V>
+struct zip_contract_probe{
+    template<typename O, typename... R>
+    void operator()(O&& /*out*/, R&&... /*rest*/) const {
+        static_assert(std::is_same_v<O&&, U&>,
+            "GD::zip must pass the elements of `out` (a grad_type<U>) to f as U&");
+        static_assert((std::is_same_v<std::remove_cvref_t<R>, V> && ...),
+            "GD::zip must pass the elements of each grad_type<V> in `rest` to f as V");
+    }
+};
+
+template<typename GD, typename U, typename V = U>
+concept gradient_descriptor = requires(
+    typename GD::template grad_type<U>& out,
+    typename GD::template grad_type<V>& rest,
+    const typename GD::template grad_type<V>& const_rest){
+    GD::zip(zip_contract_probe<U>{}, out);
+    GD::zip(zip_contract_probe<U, V>{}, out, rest);
+    GD::zip(zip_contract_probe<U, V>{}, out, const_rest);
+};
+
+// The concept only sees zip's signature. Instantiating this also checks
+// the element types zip actually passes to f.
+template<typename GD, typename U, typename V = U>
+void check_zip_contract(){
+    typename GD::template grad_type<U> out{};
+    typename GD::template grad_type<V> rest{};
+    const typename GD::template grad_type<V> const_rest{};
+    GD::zip(zip_contract_probe<U>{}, out);
+    GD::zip(zip_contract_probe<U, V>{}, out, rest);
+    GD::zip(zip_contract_probe<U, V>{}, out, const_rest);
+}
+// --------------------------------------------------
+
 // -------------- Nesting of duals --------------
 template<typename T, typename GD, int Order>
 struct dual_type_getter{

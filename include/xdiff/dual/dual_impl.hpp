@@ -44,7 +44,7 @@ protected:
     XDIFF_INLINE_HOST_DEVICE
     dual_template& operator=(U&& v){
         value_ = std::forward<U>(v);
-        GD::zip([](auto& d){ d = 0; }, grad_);// a constant has no derivative
+        GD::zip([](T& d){ d = 0; }, grad_);// a constant has no derivative
         return *this;
     }
 
@@ -69,6 +69,23 @@ class Dual : private dual_type_getter<T, GD, Order>::type {
 public:
     using value_type = T;
     using grad_type = Base::grad_type;
+
+    // level relative to `Order`
+    // Returns the scalar type the value and
+    // the elements of grad_type are made of
+    template<int level>
+    using Scalar = std::conditional_t<
+        (Order+level-1 > 0),
+        Dual<T, GD, Order+level-1>,
+        std::conditional_t<
+            (Order+level-1 == 0),
+            T, void>>;
+
+    // rest as grad_type<T>: same element type as out at Order 1, a different one above
+    static_assert(gradient_descriptor<GD, Scalar<0>, T>,
+        "GD must provide grad_type<U> and a static zip(f, out, rest...)");
+    // Taking the address odr-uses check_zip_contract, which instantiates it
+    static_assert((void(&check_zip_contract<GD, Scalar<0>, T>), true));
 
     XDIFF_INLINE_HOST_DEVICE
     Dual() = default;
@@ -102,7 +119,7 @@ public:
     XDIFF_INLINE_HOST_DEVICE
     explicit Dual(const Dual<T, GD, Order-1>& lower) requires (Order > 1) :
         Base(lower) {
-            GD::zip([](auto& d, const auto& dv){
+            GD::zip([](Scalar<0>& d, const Scalar<-1>& dv){
                 d = dv; // calls the assignment operator of Dual<order> = Dual<order-1>
             }, this->grad_, lower.grad());
         }
@@ -110,7 +127,7 @@ public:
     XDIFF_INLINE_HOST_DEVICE
     explicit Dual(Dual<T, GD, Order-1>&& lower) requires (Order > 1) :
         Base(std::move(lower)) {
-            GD::zip([](auto& d, const auto& dv){
+            GD::zip([](Scalar<0>& d, const Scalar<-1>& dv){
                 d = dv; // calls the assignment operator of Dual<order> = Dual<order-1>
             }, this->grad_, this->value_.grad());
         }
@@ -130,7 +147,7 @@ public:
     Dual& operator=(const Dual<T, GD, Order-1>& lower) requires (Order > 1){
         //Do NOT call Base, it performs unnecesary work calling GD::zip
         this->value_ = lower;
-        GD::zip([](auto& d, const auto& dv){
+        GD::zip([](Scalar<0>& d, const Scalar<-1>& dv){
             d = dv; // calls the assignment operator of Dual<order> = Dual<order-1>
         }, this->grad_, lower.grad());
         return *this;
@@ -140,7 +157,7 @@ public:
     Dual& operator=(Dual<T, GD, Order-1>&& lower) requires (Order > 1){
         //Do NOT call Base, it performs unnecesary work calling GD::zip
         this->value_ = std::move(lower);
-        GD::zip([](auto& d, const auto& dv){
+        GD::zip([](Scalar<0>& d, const Scalar<-1>& dv){
             d = dv; // calls the assignment operator of Dual<order> = Dual<order-1>
         }, this->grad_, this->value_.grad());
         return *this;
@@ -151,11 +168,9 @@ public:
     XDIFF_INLINE_HOST_DEVICE
     Dual& operator+=(const Dual& other){
         this->value_ += other.value_;
-        GD::zip(
-            [](auto& d_this, const auto& d_other){
-                d_this += d_other;
-            },
-            this->grad_, other.grad());
+        GD::zip([](Scalar<0>& d_this, const Scalar<0>& d_other){
+            d_this += d_other;
+        }, this->grad_, other.grad());
         return *this;
     }
 
@@ -171,11 +186,9 @@ public:
     XDIFF_INLINE_HOST_DEVICE
     Dual& operator-=(const Dual& other){
         this->value_ -= other.value_;
-        GD::zip(
-            [](auto& d_this, const auto& d_other){
-                d_this -= d_other;
-            },
-            this->grad_, other.grad_);
+        GD::zip([](Scalar<0>& d_this, const Scalar<0>& d_other){
+            d_this -= d_other;
+        }, this->grad_, other.grad_);
         return *this;
     }
 
@@ -190,13 +203,12 @@ public:
     // ---------------- Dual *= other -------------------
     XDIFF_INLINE_HOST_DEVICE
     Dual& operator*=(const Dual& other){
-        GD::zip(
-            [&](auto& d_this, const auto& d_other){
-                d_this = rules::Mul<T>::diff_rule(
-                    DiffPair{this->value_, d_this},
-                    DiffPair{other.value_, d_other}
-                );
-            }, this->grad_, other.grad_);
+        GD::zip([&](Scalar<0>& d_this, const Scalar<0>& d_other){
+            d_this = rules::Mul<T>::diff_rule(
+                DiffPair{this->value_, d_this},
+                DiffPair{other.value_, d_other}
+            );
+        }, this->grad_, other.grad_);
         this->value_ *= other.value_;
         return *this;
     }
@@ -205,7 +217,7 @@ public:
     XDIFF_INLINE_HOST_DEVICE
     Dual& operator*=(U&& v){
         // scaling by a constant scales every derivative
-        GD::zip([&](auto& d){ d *= v; }, this->grad_);
+        GD::zip([&](Scalar<0>& d){ d *= v; }, this->grad_);
         this->value_ *= v;
         return *this;
     }
@@ -214,13 +226,12 @@ public:
     // ---------------- Dual /= other -------------------
     XDIFF_INLINE_HOST_DEVICE
     Dual& operator/=(const Dual& other){
-        GD::zip(
-            [&](auto& d_this, const auto& d_other){
-                d_this = rules::Div<T>::diff_rule(
-                    DiffPair{this->value_, d_this},
-                    DiffPair{other.value_, d_other}
-                );
-            }, this->grad_, other.grad_);
+        GD::zip([&](Scalar<0>& d_this, const Scalar<0>& d_other){
+            d_this = rules::Div<T>::diff_rule(
+                DiffPair{this->value_, d_this},
+                DiffPair{other.value_, d_other}
+            );
+        }, this->grad_, other.grad_);
         this->value_ /= other.value_;
         return *this;
     }
@@ -228,7 +239,7 @@ public:
     template<converts_to<T> U>
     XDIFF_INLINE_HOST_DEVICE
     Dual& operator/=(U&& v){
-        GD::zip([&](auto& d){
+        GD::zip([&](Scalar<0>& d){
             d /= v;
         }, this->grad_);
         this->value_ /= v;
@@ -245,7 +256,7 @@ public:
         }
     }
 
-    const Base::value_type& full_value() const {
+    const Scalar<0>& full_value() const {
         // Could be T or Dual<T, GR, Order-1>
         return this->value_;
     }

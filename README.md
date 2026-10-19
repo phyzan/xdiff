@@ -106,9 +106,9 @@ struct GradientDescriptor{
 | `GD` | A struct describing the gradient holder |
 | `Order` | Maximum differentiation order |
 
-This means that the GradientDescriptor struct must have a templated `grad_type` alias, referencing the type of the derivative holder, and a `zip` function, that takes as input a function or a lambda `f`, and at least one gradient `out`. The `rest` parameter pack is also a pack of `grad_type` objects, possibly of different template parameter T, and could be `const grad_type&` unlike `out` that is a modifiable reference.
+This means that the GradientDescriptor struct must have a templated `grad_type` alias, referencing the type of the derivative holder, and a `zip` function, that takes as input a function or a lambda `f`, and at least one gradient `out`. The `rest` parameter pack is also a pack of `grad_type` objects, possibly of different template parameter `T`, and could be `const grad_type&` unlike `out` that is a mutable reference.
 
-The zip function must call the input function `f` for all elements of each gradient. Essentially the `zip` function tells the abstract `Dual` class how to access the elements of a gradient `grad_type`.
+The zip function must call the input function `f` for all `S` elements of each `grad_type<S>` gradient. Essentially the `zip` function tells the abstract `Dual` class how to access the elements of a gradient `grad_type`.
 
 Concrete implementations using `std::array` and `std::vector` are provided in the `xdiff` namespace.
 
@@ -118,7 +118,7 @@ Concrete implementations using `std::array` and `std::vector` are provided in th
 
 Compile with:
 ```bash
-g++ -std=c++20 -Iinclude test.cpp -o test
+g++ -std=c++20 -Iinclude -Iexternal/lazex/include -o test test.cpp
 ```
 
 ```cpp

@@ -12,12 +12,12 @@ struct DynamicState{
     using grad_type = std::vector<U>;
 
     template<typename F, typename U, typename... Rest>
-    static void zip(F&& f, std::vector<U>& out, Rest&&... v){
+    static void zip(F&& f, std::vector<U>& out, Rest&&... rest){
         if constexpr (sizeof...(Rest) > 0){
-            out.resize(std::max({out.size(), v.size()...}));
+            out.resize(std::max({out.size(), rest.size()...}));
         }
         for (size_t i = 0; i < out.size(); i++){
-            f(out[i], at(v, i)...);
+            f(out[i], at(rest, i)...);
         }
     }
 
@@ -55,9 +55,9 @@ struct StaticState{
     using grad_type = std::array<U, N>;
 
     template<typename F, typename U, typename... Rest>
-    static void zip(F&& f, std::array<U, N>& out, Rest&&... in){
+    static void zip(F&& f, std::array<U, N>& out, Rest&&... rest){
         for (size_t i = 0; i < N; i++){
-            f(out[i], in[i]...);
+            f(out[i], rest[i]...);
         }
     }
 
