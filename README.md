@@ -87,11 +87,11 @@ More concretely, the `GD` must be a struct of the form:
 ```cpp
 struct GradientDescriptor{
 
-    template<typanem T>
+    template<typename T>
     using state_type = std::array<T, 4>;
 
-    template<typename F, typename U, typename... Rest>
-    static void for_each(F&& f, U&& proto, Rest&&... rest){
+    template<typename F, typename First, typename... Rest>
+    static void for_each(F&& f, First&& proto, Rest&&... rest){
         // proto and rest... are state_type's some const&, some non-const
         // Call `f` for all elements of each parameter
         for (size_t i=0; i<4; i++){
