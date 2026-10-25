@@ -2,6 +2,7 @@
 #define XDIFF_DUAL_IMPL_HPP
 
 #include "dual_decls.hpp"
+#include <type_traits>
 
 
 namespace xdiff::detail{
@@ -14,7 +15,7 @@ public:
     ~dual_template() = default;
 protected:
     using value_type = T;
-    using grad_type = GD::template grad_type<T>;
+    using state_type = GD::template state_type<T>;
 
     XDIFF_INLINE_HOST_DEVICE
     dual_template() = default;
@@ -44,7 +45,7 @@ protected:
     XDIFF_INLINE_HOST_DEVICE
     dual_template& operator=(U&& v){
         value_ = std::forward<U>(v);
-        GD::zip([](T& d){ d = 0; }, grad_);// a constant has no derivative
+        GD::for_each([](T& d){ d = 0; }, grad_);// a constant has no derivative
         return *this;
     }
 
@@ -53,26 +54,27 @@ protected:
         return value_;
     }
 
-    const grad_type& grad() const {
+    const state_type& grad() const {
         return grad_;
     }
 
     value_type  value_;
-    grad_type   grad_;
+    state_type   grad_;
 };
 // ----------------------------------------------
 
 
 template<typename T, typename GD, int Order>
 class Dual : private dual_type_getter<T, GD, Order>::type {
+    static_assert(Order > 0, "Differentiation order must be > 0");
     using Base = detail::dual_type_getter<T, GD, Order>::type;
 public:
     using value_type = T;
-    using grad_type = Base::grad_type;
+    using state_type = Base::state_type;
 
     // level relative to `Order`
     // Returns the scalar type the value and
-    // the elements of grad_type are made of
+    // the elements of state_type are made of
     template<int level>
     using Scalar = std::conditional_t<
         (Order+level-1 > 0),
@@ -93,6 +95,11 @@ public:
     Dual& operator=(Dual&& other) noexcept = default;
     ~Dual() = default;
 
+    /*
+    Explicitly stated. Conversion to the scalar type
+    will lose derivative information and can result in
+    bad overload resolution of operators.
+    */
     operator T() const = delete;
 
     // ------------- Construct from scalar --------------
@@ -101,31 +108,84 @@ public:
     explicit Dual(U&& value) : Base(std::forward<U>(value)) {}
     // --------------------------------------------------
 
-
     // ----- Construct from scalar + gradient -----------
-    template<converts_to<T> U, converts_to<grad_type> G>
+    template<converts_to<T> U, converts_to<state_type> G>
     XDIFF_INLINE_HOST_DEVICE
     explicit Dual(U&& value, G&& grad) :
         Base(std::forward<U>(value), std::forward<G>(grad)) {}
     // --------------------------------------------------
 
     // -------- Construct from lower order Dual ---------
+    template<int N>
     XDIFF_INLINE_HOST_DEVICE
-    explicit Dual(const Dual<T, GD, Order-1>& lower) requires (Order > 1) :
+    explicit Dual(const Dual<T, GD, N>& lower) requires (N < Order) :
         Base(lower) {
-            GD::zip([](Scalar<0>& d, const Scalar<-1>& dv){
-                d = dv; // calls the assignment operator of Dual<order> = Dual<order-1>
-            }, this->grad_, lower.grad());
+            this->resize_grad_like(lower);
+            this->fill_gradient();
         }
     
+    template<int N>
     XDIFF_INLINE_HOST_DEVICE
-    explicit Dual(Dual<T, GD, Order-1>&& lower) requires (Order > 1) :
+    explicit Dual(Dual<T, GD, N>&& lower) requires (N < Order) :
         Base(std::move(lower)) {
-            GD::zip([](Scalar<0>& d, const Scalar<-1>& dv){
-                d = dv; // calls the assignment operator of Dual<order> = Dual<order-1>
-            }, this->grad_, this->value_.grad());
+            this->resize_grad_like(this->value_);
+            this->fill_gradient();
         }
     // --------------------------------------------------
+
+
+    // ------------ Resize-free assignments -------------
+    template<converts_to<T> U>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& assign(U&& v){
+        return *this = v;
+    }
+
+    template<int N>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& assign(const Seed<T, GD, N>& seed){
+        if constexpr (Order == 1){
+            this->value_ = seed.value();
+        } else {
+            this->value_.assign(seed);
+        }
+        GD::for_each([&seed](Scalar<0>& d, const T& s){
+            d = static_cast<int>(&s == &seed.value());
+        }, this->grad_, seed.state());
+        return *this;
+    }
+
+    template<int N>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& assign(const Dual<T, GD, N>& lower) requires (N < Order){
+        //Do NOT call Base, it performs unnecesary work calling GD::for_each
+        this->value_.assign(lower);
+        this->fill_gradient();
+        return *this;
+    }
+
+    template<int N>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& assign(Dual<T, GD, N>&& lower) requires (N < Order){
+        //Do NOT call Base, it performs unnecesary work calling GD::for_each
+        this->value_.assign(std::move(lower));
+        this->fill_gradient();
+        return *this;
+    }
+
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& assign(const Dual& other){
+        // for recursive fallbacks.
+        return *this = other;
+    }
+
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& assign(Dual&& other){
+        // for recursive fallbacks.
+        return *this = std::move(other);
+    }
+    // --------------------------------------------------
+
 
     // ----------- Assign from scalar value -------------
     template<converts_to<T> U>
@@ -136,24 +196,31 @@ public:
     }
     // --------------------------------------------------
 
-    // --------- Assign from lower order Dual -----------
+    // ----------- Assign from Seed -------------
+    template<int N>
     XDIFF_INLINE_HOST_DEVICE
-    Dual& operator=(const Dual<T, GD, Order-1>& lower) requires (Order > 1){
-        //Do NOT call Base, it performs unnecesary work calling GD::zip
+    Dual& operator=(const Seed<T, GD, N>& seed){
+        this->resize_like(seed.state());
+        return this->assign(seed);
+    }
+    // --------------------------------------------------
+
+    // --------- Assign from lower order Dual -----------
+    template<int N>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& operator=(const Dual<T, GD, N>& lower) requires (N < Order){
+        this->resize_grad_like(lower);
         this->value_ = lower;
-        GD::zip([](Scalar<0>& d, const Scalar<-1>& dv){
-            d = dv; // calls the assignment operator of Dual<order> = Dual<order-1>
-        }, this->grad_, lower.grad());
+        this->fill_gradient();
         return *this;
     }
 
+    template<int N>
     XDIFF_INLINE_HOST_DEVICE
-    Dual& operator=(Dual<T, GD, Order-1>&& lower) requires (Order > 1){
-        //Do NOT call Base, it performs unnecesary work calling GD::zip
+    Dual& operator=(Dual<T, GD, N>&& lower) requires (N < Order){
+        this->resize_grad_like(lower);
         this->value_ = std::move(lower);
-        GD::zip([](Scalar<0>& d, const Scalar<-1>& dv){
-            d = dv; // calls the assignment operator of Dual<order> = Dual<order-1>
-        }, this->grad_, this->value_.grad());
+        this->fill_gradient();
         return *this;
     }
     // --------------------------------------------------
@@ -162,7 +229,7 @@ public:
     XDIFF_INLINE_HOST_DEVICE
     Dual& operator+=(const Dual& other){
         this->value_ += other.value_;
-        GD::zip([](Scalar<0>& d_this, const Scalar<0>& d_other){
+        GD::for_each([](Scalar<0>& d_this, const Scalar<0>& d_other){
             d_this += d_other;
         }, this->grad_, other.grad());
         return *this;
@@ -180,7 +247,7 @@ public:
     XDIFF_INLINE_HOST_DEVICE
     Dual& operator-=(const Dual& other){
         this->value_ -= other.value_;
-        GD::zip([](Scalar<0>& d_this, const Scalar<0>& d_other){
+        GD::for_each([](Scalar<0>& d_this, const Scalar<0>& d_other){
             d_this -= d_other;
         }, this->grad_, other.grad_);
         return *this;
@@ -197,7 +264,7 @@ public:
     // ---------------- Dual *= other -------------------
     XDIFF_INLINE_HOST_DEVICE
     Dual& operator*=(const Dual& other){
-        GD::zip([&](Scalar<0>& d_this, const Scalar<0>& d_other){
+        GD::for_each([&](Scalar<0>& d_this, const Scalar<0>& d_other){
             d_this = rules::Mul<T>::diff_rule(
                 DiffPair{this->value_, d_this},
                 DiffPair{other.value_, d_other}
@@ -211,7 +278,7 @@ public:
     XDIFF_INLINE_HOST_DEVICE
     Dual& operator*=(U&& v){
         // scaling by a constant scales every derivative
-        GD::zip([&](Scalar<0>& d){ d *= v; }, this->grad_);
+        GD::for_each([&](Scalar<0>& d){ d *= v; }, this->grad_);
         this->value_ *= v;
         return *this;
     }
@@ -220,7 +287,7 @@ public:
     // ---------------- Dual /= other -------------------
     XDIFF_INLINE_HOST_DEVICE
     Dual& operator/=(const Dual& other){
-        GD::zip([&](Scalar<0>& d_this, const Scalar<0>& d_other){
+        GD::for_each([&](Scalar<0>& d_this, const Scalar<0>& d_other){
             d_this = rules::Div<T>::diff_rule(
                 DiffPair{this->value_, d_this},
                 DiffPair{other.value_, d_other}
@@ -233,13 +300,42 @@ public:
     template<converts_to<T> U>
     XDIFF_INLINE_HOST_DEVICE
     Dual& operator/=(U&& v){
-        GD::zip([&](Scalar<0>& d){
+        GD::for_each([&](Scalar<0>& d){
             d /= v;
         }, this->grad_);
         this->value_ /= v;
         return *this;
     }
     // --------------------------------------------------
+
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& set_zero_grad(){
+        GD::for_each([](Scalar<0>& d){
+            d = 0;
+        }, this->grad_);
+        return *this;
+    }
+
+    template<typename U>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& resize_like(const GD::template state_type<U>& proto){
+        GD::resize_like(this->grad_, proto);
+
+        // For deep resizing
+        if constexpr (Order > 1){
+            this->value_.resize_like(proto);
+            GD::for_each([&proto](Scalar<0>& d){
+                d.resize_like(proto);
+            }, this->grad_);
+        }
+        return *this;
+    }
+
+    template<int N>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& resize_like(const Dual<T, GD, N>& proto){
+        return this->resize_like(proto.grad());     
+    }
 
     // -------------------- Accessors -------------------
     const T& value() const {
@@ -255,12 +351,39 @@ public:
         return this->value_;
     }
 
-    const grad_type& grad() const {
+    const state_type& grad() const {
         return this->grad_;
     }
     // --------------------------------------------------
 
+private:
     friend struct dual_operator_handler;
+
+    template<typename A, typename B, int N>
+    friend class Seed;
+
+    template<int N>
+    XDIFF_INLINE_HOST_DEVICE
+    Dual& resize_grad_like(const Dual<T, GD, N>& proto){
+        GD::resize_like(this->grad_, proto.grad());
+        if constexpr (Order > 1){
+            GD::for_each([&proto](Scalar<0>& d){
+                d.resize_like(proto);
+            }, this->grad_); 
+        }
+        return *this;
+    }
+
+    XDIFF_INLINE_HOST_DEVICE
+    void fill_gradient(){
+        GD::for_each([](Scalar<0>& d, const Scalar<-1>& dv){
+            if constexpr (Order == 1){
+                d = dv;
+            } else {
+                d.assign(dv);
+            }
+        }, this->grad_, this->value_.grad());
+    }
 };
 
 
@@ -268,7 +391,7 @@ public:
 template<typename T, typename GD, int Order>
 class Seed{
 public:
-    using state_type = GD::template grad_type<T>;
+    using state_type = GD::template state_type<T>;
     using dual_type = Dual<T, GD, Order>;
 
     XDIFF_INLINE_HOST_DEVICE
@@ -283,10 +406,18 @@ public:
     XDIFF_INLINE_HOST_DEVICE
     Seed(T&& value, const state_type& state) = delete;
 
+    operator T() = delete;
+
     /// @brief The element this seed stands for.
     XDIFF_INLINE_HOST_DEVICE
     const T& value() const {
         return *value_;
+    }
+
+    /// @brief The state this seed stands for.
+    XDIFF_INLINE_HOST_DEVICE
+    const state_type& state() const {
+        return *state_;
     }
 
     /// @brief The Dual this seed stands for.
@@ -305,16 +436,9 @@ private:
     template<int N>
     XDIFF_INLINE_HOST_DEVICE
     Dual<T, GD, N> make() const {
-        if constexpr (N == 1){
-            state_type grad{};
-            GD::zip([this](T& g, const T& s){
-                g = static_cast<int>(&s == value_);
-            }, grad, *state_);
-            return Dual<T, GD, 1>(*value_, std::move(grad));
-        } else {
-            // Construct from lower order dual,
-            return Dual<T, GD, N>(make<N-1>());
-        }
+        Dual<T, GD, N> out;
+        out = *this;
+        return out;
     }
 
     const T* value_ = nullptr;
@@ -328,10 +452,18 @@ struct dual_operator_handler {
     XDIFF_INLINE_HOST_DEVICE
     static Dual<T, GD, Order>& assign(Dual<T, GD, Order>& out, const A&... args){
         // The gradient goes first, since it still needs the old value when "out" aliases an operand.
-        GD::zip([&](auto& d_out, const auto&... d){
+        GD::for_each([&](auto& d_out, const auto&... d){
             d_out = Rule::diff_rule(pair_of(args, d, out)...);
         }, out.grad_, grad_of(args, out)...);
         out.value_ = Rule::operation(value_of(args, out)...);
+        return out;
+    }
+
+    template<typename T, typename GD, int Order>
+    XDIFF_INLINE_HOST_DEVICE
+    static Dual<T, GD, Order> empty_like(const Dual<T, GD, Order>& proto){
+        Dual<T, GD, Order> out;
+        out.resize_like(proto);
         return out;
     }
 
@@ -374,9 +506,10 @@ private:
 
 
 template<typename T, typename GD, int Order>
-SeedState<T, GD, Order> make_seeds(const typename GD::template grad_type<T>& state){
+SeedState<T, GD, Order> make_seeds(const typename GD::template state_type<T>& state){
     SeedState<T, GD, Order> seeds{};
-    GD::zip([&state](Seed<T, GD, Order>& seed, const T& x){
+    GD::resize_like(seeds, state);
+    GD::for_each([&state](Seed<T, GD, Order>& seed, const T& x){
         seed = Seed<T, GD, Order>(x, state);
     }, seeds, state);
     return seeds;
@@ -407,7 +540,7 @@ XDIFF_HOST_DEVICE XDIFF_DUAL& ASSIGN(XDIFF_DUAL& out, const XDIFF_SEED& arg){\
 \
 template<typename T, typename GD, int Order> \
 XDIFF_HOST_DEVICE XDIFF_DUAL OPERATOR(const XDIFF_DUAL& arg){ \
-    XDIFF_DUAL out(arg);\
+    XDIFF_DUAL out = dual_operator_handler::empty_like(arg);\
     ASSIGN(out, arg);\
     return out;\
 }\
@@ -464,11 +597,11 @@ XDIFF_HOST_DEVICE XDIFF_DUAL& ASSIGN(XDIFF_DUAL& out, const F& a, const XDIFF_SE
 
 
 
-// A new result starts as a copy of a Dual operand, so that its gradient has the shape of theirs.
+// A new result gets its gradient shaped like that of a Dual operand.
 #define XDIFF_DEFINE_BINARY_OPERATOR(NAME, ASSIGN) \
 template<typename T, typename GD, int Order> \
 XDIFF_HOST_DEVICE XDIFF_DUAL NAME(const XDIFF_DUAL& a, const XDIFF_DUAL& b){ \
-    XDIFF_DUAL out(a); \
+    XDIFF_DUAL out = dual_operator_handler::empty_like(a); \
     ASSIGN(out, a, b); \
     return out; \
 }\
@@ -490,14 +623,14 @@ XDIFF_HOST_DEVICE XDIFF_DUAL NAME(const XDIFF_SEED& a, const XDIFF_SEED& b){ \
 \
 template<typename T, typename GD, int Order, detail::converts_to<T> F> \
 XDIFF_HOST_DEVICE XDIFF_DUAL NAME(const XDIFF_DUAL& a, const F& b){\
-    XDIFF_DUAL out(a); \
+    XDIFF_DUAL out = dual_operator_handler::empty_like(a); \
     ASSIGN(out, a, b); \
     return out; \
 }\
 \
 template<typename T, typename GD, int Order, detail::converts_to<T> F> \
 XDIFF_HOST_DEVICE XDIFF_DUAL NAME(const F& a, const XDIFF_DUAL& b){ \
-    XDIFF_DUAL out(b); \
+    XDIFF_DUAL out = dual_operator_handler::empty_like(b); \
     ASSIGN(out, a, b); \
     return out; \
 }\
@@ -583,7 +716,7 @@ XDIFF_HOST_DEVICE XDIFF_DUAL& assign_power(XDIFF_DUAL& out, const XDIFF_SEED& ar
 
 template<int P, typename T, typename GD, int Order>
 XDIFF_HOST_DEVICE auto power(const XDIFF_DUAL& arg){
-    XDIFF_DUAL out(arg);
+    XDIFF_DUAL out = dual_operator_handler::empty_like(arg);
     assign_power<P>(out, arg);
     return out;
 }

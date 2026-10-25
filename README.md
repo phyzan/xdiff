@@ -88,13 +88,20 @@ More concretely, the `GD` must be a struct of the form:
 struct GradientDescriptor{
 
     template<typanem T>
-    using grad_type = std::array<T, 4>;
+    using state_type = std::array<T, 4>;
 
     template<typename F, typename U, typename... Rest>
-    static void zip(F&& f, grad_type<U>& out, Rest&&... rest){
+    static void for_each(F&& f, U&& proto, Rest&&... rest){
+        // proto and rest... are state_type's some const&, some non-const
+        // Call `f` for all elements of each parameter
         for (size_t i=0; i<4; i++){
-            f(out[i], rest[i]...);
+            f(proto[i], rest[i]...);
         }
+    }
+
+    template<typename To, typename From>
+    static void resize_like(state_type<To>& dst, const state_type<From>& ref){
+        // nothing to do, std::array has a fixed size
     }
 };
 ```
@@ -106,9 +113,11 @@ struct GradientDescriptor{
 | `GD` | A struct describing the gradient holder |
 | `Order` | Maximum differentiation order |
 
-This means that the GradientDescriptor struct must have a templated `grad_type` alias, referencing the type of the derivative holder, and a `zip` function, that takes as input a function or a lambda `f`, and at least one gradient `out`. The `rest` parameter pack is also a pack of `grad_type` objects, possibly of different template parameter `T`, and could be `const grad_type&` unlike `out` that is a mutable reference.
+This means that the GradientDescriptor struct must have a templated `state_type` alias, referencing the type of the derivative holder, and a `for_each` function, that takes as input a function or a lambda `f`, and at least one gradient `proto`. The `rest` parameter pack is also a pack of `state_type` objects, possibly of different template parameter `T`.
 
-The zip function must call the input function `f` for all `S` elements of each `grad_type<S>` gradient. Essentially the `zip` function tells the abstract `Dual` class how to access the elements of a gradient `grad_type`.
+The `for_each` function must call the input function `f` for all `S` elements of each `state_type<S>` gradient. Essentially the `for_each` function tells the abstract `Dual` class how to access the elements of a gradient `state_type`. All the gradients passed to a single `for_each` call have the same shape.
+
+The `resize_like` function must give `dst` the shape of `ref` (e.g. the same size for a `std::vector`), where the two may hold elements of different types. It is called whenever the `Dual` class allocates a new gradient, such as for the result of an operation or for a seed, before that gradient is passed to `for_each`. For fixed-size holders it could do nothing.
 
 Concrete implementations using `std::array` and `std::vector` are provided in the `xdiff` namespace.
 
@@ -142,8 +151,6 @@ int main(){
     // The "4" means storing up to 4th order derivatives
     auto seeds = xdiff::make_seeds<T, xdiff::StaticState<3>, 4>(state);
 
-    // Convenience alias class that allows for easier access
-    // for higher order derivatives
     auto x = seeds[0];
     auto y = seeds[1];
     auto z = seeds[2];

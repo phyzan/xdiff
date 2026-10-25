@@ -19,10 +19,10 @@ template<typename T, typename GD, int Order>
 class Seed;
 
 template<typename T, typename GD, int Order>
-using SeedState = GD::template grad_type<Seed<T, GD, Order>>;
+using SeedState = GD::template state_type<Seed<T, GD, Order>>;
 
 template<typename T, typename GD, int Order>
-SeedState<T, GD, Order> make_seeds(const typename GD::template grad_type<T>& /*state*/);
+SeedState<T, GD, Order> make_seeds(const typename GD::template state_type<T>& /*state*/);
 
 template<typename U, typename T>
 concept converts_to = std::constructible_from<T, U>;
