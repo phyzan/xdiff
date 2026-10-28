@@ -56,7 +56,7 @@ struct StaticState{
     }
 
     template<typename To, typename From>
-    static void resize_like(std::array<To, N>& dst, const std::array<From, N>& ref){}
+    static void resize_like(std::array<To, N>& /*dst*/, const std::array<From, N>& /*ref*/){}
 
     template<int M, typename U, std::integral Int, std::integral... Rest>
     static const U& get_diff(const xdiff::Dual<U, StaticState, M>& dual, Int i, Rest... rest) {

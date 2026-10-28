@@ -22,13 +22,16 @@ template<typename T, typename GD, int Order>
 using SeedState = GD::template state_type<Seed<T, GD, Order>>;
 
 template<typename T, typename GD, int Order>
-using DualState = GD::template state_type<Dual<T, GD, Order>>;
+using dual_state_t = GD::template state_type<Dual<T, GD, Order>>;
 
 template<typename T, typename GD>
-using State = GD::template state_type<T>;
+using state_t = GD::template state_type<T>;
 
 template<typename T, typename GD, int Order>
-SeedState<T, GD, Order> make_seeds(const State<T, GD>& state);
+void set_seeds(SeedState<T, GD, Order>& out, const state_t<T, GD>& state);
+
+template<typename T, typename GD, int Order>
+SeedState<T, GD, Order> make_seeds(const state_t<T, GD>& state);
 
 template<typename U, typename T>
 concept converts_to = std::constructible_from<T, U>;
@@ -127,7 +130,7 @@ std::ostream& operator<<(std::ostream& os, const detail::XDIFF_SEED& a){
 
 namespace xdiff{
 
-using detail::Dual, detail::Seed, detail::SeedState, detail::DualState, detail::State, detail::make_seeds;
+using detail::Dual, detail::Seed, detail::SeedState, detail::dual_state_t, detail::state_t, detail::set_seeds, detail::make_seeds;
 
 // The math functions as xdiff::<some_math_func> etc. 
 // The operators need no such line: argument-dependent lookup finds them.

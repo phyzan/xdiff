@@ -15,7 +15,7 @@ public:
     ~dual_template() = default;
 protected:
     using value_type = T;
-    using state_type = State<T, GD>;
+    using state_type = state_t<T, GD>;
 
     XDIFF_INLINE_HOST_DEVICE
     dual_template() = default;
@@ -391,7 +391,7 @@ private:
 template<typename T, typename GD, int Order>
 class Seed{
 public:
-    using state_type = State<T, GD>;
+    using state_type = state_t<T, GD>;
     using dual_type = Dual<T, GD, Order>;
 
     XDIFF_INLINE_HOST_DEVICE
@@ -504,14 +504,18 @@ private:
     }
 };
 
-
 template<typename T, typename GD, int Order>
-SeedState<T, GD, Order> make_seeds(const State<T, GD>& state){
-    SeedState<T, GD, Order> seeds{};
-    GD::resize_like(seeds, state);
+void set_seeds(SeedState<T, GD, Order>& out, const state_t<T, GD>& state){
+    GD::resize_like(out, state);
     GD::for_each([&state](Seed<T, GD, Order>& seed, const T& x){
         seed = Seed<T, GD, Order>(x, state);
-    }, seeds, state);
+    }, out, state);
+}
+
+template<int Order, typename T, typename GD>
+SeedState<T, GD, Order> make_seeds(const state_t<T, GD>& state){
+    SeedState<T, GD, Order> seeds{};
+    set_seeds(seeds, state);
     return seeds;
 }
 
