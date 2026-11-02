@@ -92,20 +92,9 @@ target_link_libraries(your_target PRIVATE xdiff)
 ```
 This gives you `<xdiff/...>` and `<lazex/...>` includes, the required C++20 standard, and the [options](#CMake-Options) below (toggle with e.g. `-DXDIFF_FAST=ON`).
 
-**Syntax highlighting (clangd):** configure the build from the repo root so `compile_commands.json` ends up directly in `build/`, which clangd discovers automatically:
-```bash
-cmake -S . -B build
-```
-or, if you want to compile with some optimization macros enabled:
-```bash
-cmake -S . -B build -DXDIFF_LAZY_NESTED_DUAL=ON -DXDIFF_FAST=ON -DXDIFF_SCALAR_OPTIMIZATIONS=ON
-```
+**Syntax highlighting (clangd):** `cmake -S . -B build` writes `build/compile_commands.json`, which clangd discovers automatically.
 
-**Running the benchmark:**
-```bash
-cmake --build build
-./build/benchmark 100000
-```
+**Running the benchmark:** the command is at the end of [benchmark.cpp](benchmark.cpp).
 
 Then include:
 ```cpp
