@@ -4,6 +4,16 @@
 #include "core.hpp"
 
 
+namespace xdiff{
+
+// Defined in dual_impl.hpp. Declared here so that Power reaches it on a plain scalar, whichever header comes first.
+template<int P, typename F>
+XDIFF_INLINE_HOST_DEVICE
+decltype(auto) power(const F& f);
+
+} // namespace xdiff
+
+
 namespace xdiff::detail::rules{
 
 
