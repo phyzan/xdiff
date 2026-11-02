@@ -141,4 +141,5 @@ int main(int argc, char *argv[]){
 }
 
 
-// clang++ -std=c++20 -O3 -DNDEBUG -DXDIFF_FAST -DXDIFF_LEIBNIZ_OPT -DXDIFF_SCALAR_OPTIMIZATIONS -DXDIFF_LAZY_NESTED_DUAL -Iinclude -Iexternal/lazex/include -Iexternal/lazex/external/mpreal benchmark.cpp -o benchmark && ./benchmark 1000
+// Build and run from the repository root (g++ or clang++; the -D options are optional, see the README):
+//   clang++ -std=c++20 -O3 -DNDEBUG -DXDIFF_FAST -DXDIFF_LEIBNIZ_OPT -DXDIFF_SCALAR_OPTIMIZATIONS -DXDIFF_LAZY_NESTED_DUAL -Iinclude -Iexternal/lazex/include benchmark.cpp -o benchmark && ./benchmark 1000
