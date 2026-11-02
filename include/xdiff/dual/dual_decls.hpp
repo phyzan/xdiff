@@ -101,6 +101,7 @@ XDIFF_DECLARE_BINARY_PACK(operator-, assign_sub)
 XDIFF_DECLARE_BINARY_PACK(operator*, assign_mul)
 XDIFF_DECLARE_BINARY_PACK(operator/, assign_div)
 XDIFF_DECLARE_BINARY_PACK(pow, assign_pow)
+XDIFF_DECLARE_BINARY_PACK(atan2, assign_atan2)
 
 // Comparison operators
 XDIFF_DECLARE_COMPARISON(==)
@@ -136,7 +137,7 @@ using detail::Dual, detail::Seed, detail::SeedState, detail::dual_state_t, detai
 // The operators need no such line: argument-dependent lookup finds them.
 using detail::abs, detail::log, detail::log10, detail::exp, detail::sqrt, detail::sin, detail::cos, detail::tan,
       detail::cot, detail::sec, detail::csc, detail::asin, detail::acos, detail::atan, detail::asec, detail::acsc,
-      detail::sinh, detail::cosh, detail::tanh, detail::erf, detail::pow, detail::power;
+      detail::sinh, detail::cosh, detail::tanh, detail::erf, detail::pow, detail::atan2, detail::power;
 
 LAZEX_USING_MATH;
 

@@ -736,6 +736,7 @@ XDIFF_DEFINE_BINARY_PACK(operator-, assign_sub, rules::Sub)
 XDIFF_DEFINE_BINARY_PACK(operator*, assign_mul, rules::Mul)
 XDIFF_DEFINE_BINARY_PACK(operator/, assign_div, rules::Div)
 XDIFF_DEFINE_BINARY_PACK(pow,       assign_pow, rules::Pow)
+XDIFF_DEFINE_BINARY_PACK(atan2,     assign_atan2, rules::ArcTan2)
 
 XDIFF_DEFINE_COMPARISON(==)
 XDIFF_DEFINE_COMPARISON(!=)
