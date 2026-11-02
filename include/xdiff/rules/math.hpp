@@ -387,6 +387,39 @@ struct ArcTan : MathFunc<ArcTan<T>, T>{
 
 
 template<typename T>
+struct ArcTan2 : BaseOperand<T, ArcTan2<T>>{
+
+    using Base = BaseOperand<T, ArcTan2<T>>;
+
+    template<typename A, typename B>
+    XDIFF_INLINE_HOST_DEVICE
+    static auto operation(const A& left, const B& right){
+        return atan2(left, right);
+    }
+
+    template<typename A, typename B, typename DA, typename DB>
+    XDIFF_INLINE_HOST_DEVICE
+    static auto diff_rule(const DiffPair<A, DA>& a, const DiffPair<B, DB>& b) {
+        if constexpr (DiffPair<A, DA>::isTrivial() && DiffPair<B, DB>::isTrivial()) {
+            return 0;  // atan2(const, const): derivative is 0
+        } else if constexpr (DiffPair<A, DA>::isTrivial()) {
+            // atan2(c, f): d/dx = -c * df / (c² + f²)
+            const auto& c = scalar_of<T>(a.value);
+            return -c * b.grad / (c * c + b.value * b.value);
+        } else if constexpr (DiffPair<B, DB>::isTrivial()) {
+            // atan2(f, c): d/dx = c * df / (f² + c²)
+            const auto& c = scalar_of<T>(b.value);
+            return c * a.grad / (a.value * a.value + c * c);
+        } else {
+            // General: (b*da - a*db) / (a² + b²)
+            return (b.value * a.grad - a.value * b.grad) / (a.value * a.value + b.value * b.value);
+        }
+    }
+
+};
+
+
+template<typename T>
 struct ArcCot : MathFunc<ArcCot<T>, T>{
 
     using Base = MathFunc<ArcCot<T>, T>;
