@@ -265,6 +265,33 @@ struct CustomBinaryEvaluator<xdiff::Dual<T, NVARS, NORDER, LY>> : public BinaryE
         xdiff::assign_pow(out, a, b);
     }
 
+    // atan2
+    LAZEX_EVALUATE_OPER(DualType, a, b, DualType, lazex::tags::ATAN2, DualType){
+        xdiff::assign_atan2(out, a, b);
+    }
+
+    template<arithmetic F>
+    LAZEX_FORCE_INLINE static void evaluate(lazex::tags::ATAN2 /**/, DualType& out, Pool<DualType> /**/, const DualType& a, const F& b){
+        xdiff::assign_atan2(out, a, b);
+    }
+
+    template<arithmetic F>
+    LAZEX_FORCE_INLINE static void evaluate(lazex::tags::ATAN2 /**/, DualType& out, Pool<DualType> /**/, const F& a, const DualType& b){
+        xdiff::assign_atan2(out, a, b);
+    }
+
+    // The order is deduced rather than named, so that Seed is never instantiated for an
+    // order this Dual cannot seed (a Seed always carries at least one derivative order).
+    template<int No>
+    LAZEX_FORCE_INLINE static void evaluate(lazex::tags::ATAN2 /**/, DualType& out, Pool<DualType> /**/, const DualType& a, const xdiff::Seed<T, NVARS, No, LY>& b){
+        xdiff::assign_atan2(out, a, b);
+    }
+
+    template<int No>
+    LAZEX_FORCE_INLINE static void evaluate(lazex::tags::ATAN2 /**/, DualType& out, Pool<DualType> /**/, const xdiff::Seed<T, NVARS, No, LY>& a, const DualType& b){
+        xdiff::assign_atan2(out, a, b);
+    }
+
 
 };
 

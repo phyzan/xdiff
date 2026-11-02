@@ -397,6 +397,35 @@ template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL& assign_pow(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
 
+// atan2
+template<typename T, int NVARS, int NORDER, Layout LY>
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_atan2(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
+
+template<typename T, int NVARS, int NORDER, Layout LY>
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_atan2(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
+
+template<typename T, int NVARS, int NORDER, Layout LY>
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_atan2(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
+
+template<typename T, int NVARS, int NORDER, Layout LY>
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_atan2(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
+
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
+requires (detail::isScalarOperand<F, T>)
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_atan2(XDIFF_DUAL& /*out*/, const F& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
+
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
+requires (detail::isScalarOperand<F, T>)
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_atan2(XDIFF_DUAL& /*out*/, const XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
+
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
+requires (detail::isScalarOperand<F, T>)
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_atan2(XDIFF_DUAL& /*out*/, const F& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
+
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
+requires (detail::isScalarOperand<F, T>)
+XDIFF_HOST_DEVICE XDIFF_DUAL& assign_atan2(XDIFF_DUAL& /*out*/, const XDIFF_SEED& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
+
 
 // -------------------------------- Operator overloads --------------------------------
 
@@ -558,6 +587,35 @@ XDIFF_HOST_DEVICE XDIFF_DUAL pow(const XDIFF_SEED& /*a*/, const F& /*b*/) XDIFF_
 template<typename F, typename T, int NVARS, int NORDER, Layout LY>
 requires (detail::isScalarOperand<F, T>)
 XDIFF_HOST_DEVICE XDIFF_DUAL pow(const F& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
+
+// atan2
+template<typename T, int NVARS, int NORDER, Layout LY>
+XDIFF_HOST_DEVICE XDIFF_DUAL atan2(const XDIFF_DUAL& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
+
+template<typename T, int NVARS, int NORDER, Layout LY>
+XDIFF_HOST_DEVICE XDIFF_DUAL atan2(const XDIFF_DUAL& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
+
+template<typename T, int NVARS, int NORDER, Layout LY>
+XDIFF_HOST_DEVICE XDIFF_DUAL atan2(const XDIFF_SEED& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
+
+template<typename T, int NVARS, int NORDER, Layout LY>
+XDIFF_HOST_DEVICE XDIFF_DUAL atan2(const XDIFF_SEED& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
+
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
+requires (detail::isScalarOperand<F, T>)
+XDIFF_HOST_DEVICE XDIFF_DUAL atan2(const XDIFF_DUAL& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
+
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
+requires (detail::isScalarOperand<F, T>)
+XDIFF_HOST_DEVICE XDIFF_DUAL atan2(const F& /*a*/, const XDIFF_DUAL& /*b*/) XDIFF_NO_DEF;
+
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
+requires (detail::isScalarOperand<F, T>)
+XDIFF_HOST_DEVICE XDIFF_DUAL atan2(const XDIFF_SEED& /*a*/, const F& /*b*/) XDIFF_NO_DEF;
+
+template<typename F, typename T, int NVARS, int NORDER, Layout LY>
+requires (detail::isScalarOperand<F, T>)
+XDIFF_HOST_DEVICE XDIFF_DUAL atan2(const F& /*a*/, const XDIFF_SEED& /*b*/) XDIFF_NO_DEF;
 
 
 
