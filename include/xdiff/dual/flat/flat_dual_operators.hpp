@@ -196,6 +196,7 @@ XDIFF_DEFINE_FLAT_DUAL_BINARY_OPERATION(operator-, assign_sub, xdiff::detail::ru
 XDIFF_DEFINE_FLAT_DUAL_BINARY_OPERATION(operator*, assign_mul, xdiff::detail::rules::Mul)
 XDIFF_DEFINE_FLAT_DUAL_BINARY_OPERATION(operator/, assign_div, xdiff::detail::rules::Div)
 XDIFF_DEFINE_FLAT_DUAL_BINARY_OPERATION(pow, assign_pow, xdiff::detail::rules::Pow)
+XDIFF_DEFINE_FLAT_DUAL_BINARY_OPERATION(atan2, assign_atan2, xdiff::detail::rules::ArcTan2)
 
 
 // ------------------ power<int>(f) -------------------

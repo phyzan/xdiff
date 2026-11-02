@@ -587,7 +587,7 @@ struct HelperBaseOperandEvaluator{
         template<size_t I, int Nv, int No>
         XDIFF_INLINE_DEVICE
         static auto reduced_diff(const Seed<T, Nv, No, Layout::Flat>& f){
-            return (f.axis() == I ? 1 : 0);
+            return (f.axis() == I ? T(1) : T(0));
         }
 
         /// @brief Scalars have zero derivative.

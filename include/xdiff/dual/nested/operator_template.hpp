@@ -84,7 +84,7 @@ struct NestedDualOperationHelper {
         if constexpr (NORDER > 0){
             for (size_t i = 0; i < arg.nvars(); i++){
                 if (i == arg.axis()){
-                    out[i] = RuleStruct::diff_rule(DiffPair{arg.trimmed(), 1});
+                    out[i] = RuleStruct::diff_rule(DiffPair{arg.trimmed(), T(1)});
                 } else {
                     out[i] = RuleStruct::diff_rule(DiffPair{arg.trimmed(), ZeroValue{}});
                 }
@@ -158,7 +158,7 @@ struct NestedDualOperationHelper {
         if constexpr (NORDER > 0){
             for (size_t i = 0; i < a.nvars(); i++){
                 if (i == a.axis()){
-                    out[i] = RuleStruct::diff_rule(DiffPair{a.trimmed(), 1}, DP{b.true_value, b[i]});
+                    out[i] = RuleStruct::diff_rule(DiffPair{a.trimmed(), T(1)}, DP{b.true_value, b[i]});
                 }else{
                     out[i] = RuleStruct::diff_rule(DiffPair{a.trimmed(), ZeroValue{}}, DP{b.true_value, b[i]});
                 }
@@ -187,11 +187,11 @@ struct NestedDualOperationHelper {
                 const bool grad_a = (i == a.axis());
                 const bool grad_b = (i == b.axis());
                 if (grad_a && grad_b){
-                    out[i] = RuleStruct::diff_rule(DiffPair{a.trimmed(), 1}, DiffPair{b.trimmed(), 1});
+                    out[i] = RuleStruct::diff_rule(DiffPair{a.trimmed(), T(1)}, DiffPair{b.trimmed(), T(1)});
                 } else if (grad_a){
-                    out[i] = RuleStruct::diff_rule(DiffPair{a.trimmed(), 1}, DiffPair{b.trimmed(), ZeroValue{}});
+                    out[i] = RuleStruct::diff_rule(DiffPair{a.trimmed(), T(1)}, DiffPair{b.trimmed(), ZeroValue{}});
                 } else if (grad_b){
-                    out[i] = RuleStruct::diff_rule(DiffPair{a.trimmed(), ZeroValue{}}, DiffPair{b.trimmed(), 1});
+                    out[i] = RuleStruct::diff_rule(DiffPair{a.trimmed(), ZeroValue{}}, DiffPair{b.trimmed(), T(1)});
                 } else {
                     out[i] = RuleStruct::diff_rule(DiffPair{a.trimmed(), ZeroValue{}}, DiffPair{b.trimmed(), ZeroValue{}});
                 }
@@ -216,7 +216,7 @@ struct NestedDualOperationHelper {
         if constexpr (NORDER > 0){
             for (size_t i = 0; i < a.nvars(); i++){
                 if (i == b.axis()){
-                    out[i] = RuleStruct::diff_rule(DP{a.true_value, a[i]}, DiffPair{b.trimmed(), 1});
+                    out[i] = RuleStruct::diff_rule(DP{a.true_value, a[i]}, DiffPair{b.trimmed(), T(1)});
                 }else{
                     out[i] = RuleStruct::diff_rule(DP{a.true_value, a[i]}, DiffPair{b.trimmed(), ZeroValue{}});
                 }
@@ -284,7 +284,7 @@ struct NestedDualOperationHelper {
         if constexpr (NORDER > 0){
             for (size_t i = 0; i < b.nvars(); i++){
                 if (i == b.axis()){
-                    out[i] = RuleStruct::diff_rule(DP_A{a, ZeroValue{}}, DiffPair{b.trimmed(), 1});
+                    out[i] = RuleStruct::diff_rule(DP_A{a, ZeroValue{}}, DiffPair{b.trimmed(), T(1)});
                 }else{
                     out[i] = RuleStruct::diff_rule(DP_A{a, ZeroValue{}}, DiffPair{b.trimmed(), ZeroValue{}});
                 }
@@ -308,7 +308,7 @@ struct NestedDualOperationHelper {
         if constexpr (NORDER > 0){
             for (size_t i = 0; i < a.nvars(); i++){
                 if (i == a.axis()){
-                    out[i] = RuleStruct::diff_rule(DiffPair{a.trimmed(), 1}, DP_B{b, ZeroValue{}});
+                    out[i] = RuleStruct::diff_rule(DiffPair{a.trimmed(), T(1)}, DP_B{b, ZeroValue{}});
                 }else{
                     out[i] = RuleStruct::diff_rule(DiffPair{a.trimmed(), ZeroValue{}}, DP_B{b, ZeroValue{}});
                 }

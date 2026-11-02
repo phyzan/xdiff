@@ -2,7 +2,7 @@
 #define XDIFF_MATH_HPP
 
 #include <cmath>
-#include <lazex/math.hpp>
+#include <lazex/src/math.hpp>
 
 
 /**
