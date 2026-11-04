@@ -2,7 +2,8 @@
 #define XDIFF_DUAL_IMPL_HPP
 
 #include "dual_decls.hpp"
-#include <type_traits>
+#include "../utils/lazydiff.hpp" // IWYU pragma: keep
+#include <type_traits> // IWYU pragma: keep
 
 
 namespace xdiff::detail{
@@ -76,13 +77,8 @@ public:
     // Returns the scalar type the value and
     // the elements of state_type are made of
     template<int level>
-    using Scalar = std::conditional_t<
-        (Order+level-1 > 0),
-        Dual<T, GD, Order+level-1>,
-        std::conditional_t<
-            (Order+level-1 == 0),
-            T, void>>;
-            
+    using Scalar = dual_type_getter<T, GD, Order+level>::scalar;
+
     XDIFF_INLINE_HOST_DEVICE
     Dual() = default;
     XDIFF_INLINE_HOST_DEVICE
@@ -451,19 +447,13 @@ struct dual_operator_handler {
     template<typename Rule, typename T, typename GD, int Order, typename... A>
     XDIFF_INLINE_HOST_DEVICE
     static Dual<T, GD, Order>& assign(Dual<T, GD, Order>& out, const A&... args){
+        // A lazy expression evaluates into workers, which keep whatever shape their last use left them in.
+        GD::resize_like(out.grad_, shape_of(args...));
         // The gradient goes first, since it still needs the old value when "out" aliases an operand.
         GD::for_each([&](auto& d_out, const auto&... d){
             d_out = Rule::diff_rule(pair_of(args, d, out)...);
         }, out.grad_, grad_of(args, out)...);
         out.value_ = Rule::operation(value_of(args, out)...);
-        return out;
-    }
-
-    template<typename T, typename GD, int Order>
-    XDIFF_INLINE_HOST_DEVICE
-    static Dual<T, GD, Order> empty_like(const Dual<T, GD, Order>& proto){
-        Dual<T, GD, Order> out;
-        out.resize_like(proto);
         return out;
     }
 
@@ -502,6 +492,19 @@ private:
     static const auto& grad_of(const F& /*x*/, const D& out){
         return out.grad();
     }
+
+    // The gradient of the first Dual operand. They all share its shape, and a scalar has none.
+    template<typename T, typename GD, int Order, typename... Rest>
+    XDIFF_INLINE_HOST_DEVICE
+    static const auto& shape_of(const Dual<T, GD, Order>& first, const Rest&... /*rest*/){
+        return first.grad();
+    }
+
+    template<typename F, typename... Rest>
+    XDIFF_INLINE_HOST_DEVICE
+    static const auto& shape_of(const F& /*first*/, const Rest&... rest){
+        return shape_of(rest...);
+    }
 };
 
 template<typename T, typename GD, int Order>
@@ -512,23 +515,12 @@ void set_seeds(SeedState<T, GD, Order>& out, const state_t<T, GD>& state){
     }, out, state);
 }
 
-template<int Order, typename T, typename GD>
+template<typename T, typename GD, int Order>
 SeedState<T, GD, Order> make_seeds(const state_t<T, GD>& state){
     SeedState<T, GD, Order> seeds{};
-    set_seeds(seeds, state);
+    set_seeds<T, GD, Order>(seeds, state);
     return seeds;
 }
-
-template<size_t NFACTORS, typename F, typename... U>
-XDIFF_INLINE_HOST_DEVICE
-auto power_fold(const F& f, const U&... copies){
-    if constexpr (sizeof...(copies) < NFACTORS){
-        return power_fold<NFACTORS>(f, copies..., f);
-    } else {
-        return (copies*...);
-    }
-}
-
 
 
 #define XDIFF_DEFINE_UNARY(OPERATOR, ASSIGN, RULE) \
@@ -544,7 +536,7 @@ XDIFF_HOST_DEVICE XDIFF_DUAL& ASSIGN(XDIFF_DUAL& out, const XDIFF_SEED& arg){\
 \
 template<typename T, typename GD, int Order> \
 XDIFF_HOST_DEVICE XDIFF_DUAL OPERATOR(const XDIFF_DUAL& arg){ \
-    XDIFF_DUAL out = dual_operator_handler::empty_like(arg);\
+    XDIFF_DUAL out;\
     ASSIGN(out, arg);\
     return out;\
 }\
@@ -601,11 +593,10 @@ XDIFF_HOST_DEVICE XDIFF_DUAL& ASSIGN(XDIFF_DUAL& out, const F& a, const XDIFF_SE
 
 
 
-// A new result gets its gradient shaped like that of a Dual operand.
 #define XDIFF_DEFINE_BINARY_OPERATOR(NAME, ASSIGN) \
 template<typename T, typename GD, int Order> \
 XDIFF_HOST_DEVICE XDIFF_DUAL NAME(const XDIFF_DUAL& a, const XDIFF_DUAL& b){ \
-    XDIFF_DUAL out = dual_operator_handler::empty_like(a); \
+    XDIFF_DUAL out; \
     ASSIGN(out, a, b); \
     return out; \
 }\
@@ -627,14 +618,14 @@ XDIFF_HOST_DEVICE XDIFF_DUAL NAME(const XDIFF_SEED& a, const XDIFF_SEED& b){ \
 \
 template<typename T, typename GD, int Order, detail::converts_to<T> F> \
 XDIFF_HOST_DEVICE XDIFF_DUAL NAME(const XDIFF_DUAL& a, const F& b){\
-    XDIFF_DUAL out = dual_operator_handler::empty_like(a); \
+    XDIFF_DUAL out; \
     ASSIGN(out, a, b); \
     return out; \
 }\
 \
 template<typename T, typename GD, int Order, detail::converts_to<T> F> \
 XDIFF_HOST_DEVICE XDIFF_DUAL NAME(const F& a, const XDIFF_DUAL& b){ \
-    XDIFF_DUAL out = dual_operator_handler::empty_like(b); \
+    XDIFF_DUAL out; \
     ASSIGN(out, a, b); \
     return out; \
 }\
@@ -720,7 +711,7 @@ XDIFF_HOST_DEVICE XDIFF_DUAL& assign_power(XDIFF_DUAL& out, const XDIFF_SEED& ar
 
 template<int P, typename T, typename GD, int Order>
 XDIFF_HOST_DEVICE auto power(const XDIFF_DUAL& arg){
-    XDIFF_DUAL out = dual_operator_handler::empty_like(arg);
+    XDIFF_DUAL out;
     assign_power<P>(out, arg);
     return out;
 }
@@ -747,23 +738,6 @@ XDIFF_DEFINE_COMPARISON(>=)
 
 } // namespace xdiff::detail
 
-
-namespace xdiff{
-
-/// @brief f^P as a fold of |P| factors, reciprocated when P < 0: the integer power of a plain scalar, which
-/// rules::Power reaches at the bottom of a Dual. A Dual itself takes the more specialized overload above.
-template<int P, typename F>
-XDIFF_INLINE_HOST_DEVICE
-decltype(auto) power(const F& f){
-    static_assert(P != 0, "Integer power must be non-zero");
-    if constexpr (P > 0) {
-        return detail::power_fold<size_t(P)>(f);
-    } else {
-        return 1 / detail::power_fold<size_t(-P)>(f);
-    }
-}
-
-} // namespace xdiff
 
 #undef XDIFF_DEFINE_UNARY
 #undef XDIFF_DEFINE_ASSIGN_BINARY

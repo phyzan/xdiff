@@ -5,13 +5,16 @@
 #include <type_traits>
 #include <utility>
 #include <lazex/lazex.hpp>
-#include "../backend.hpp"
+#include "../utils/backend.hpp"
 
 namespace xdiff{
 
 // So that xdiff's own generic code gets the same overload set it asks users to adopt,
 // independently of which headers a translation unit happened to include first.
-LAZEX_USING_MATH;
+LAZEX_USING_MATH
+
+// Not part of the macros: a library name, which consumers call as xdiff::power.
+using lazex::power;
 
 struct ZeroValue{};
 
@@ -290,7 +293,7 @@ struct MathFunc : BaseOperand<T, Derived>{
 
     template<typename F, typename DF>
     XDIFF_INLINE_HOST_DEVICE
-    static auto diff_rule(const DiffPair<F, DF>& a) {
+    static decltype(auto) diff_rule(const DiffPair<F, DF>& a) {
         if constexpr (DiffPair<F, DF>::isTrivial()) {
             return 0;  // Constant argument: derivative is 0
         } else {
@@ -301,7 +304,7 @@ struct MathFunc : BaseOperand<T, Derived>{
     /// @brief Override this in derived classes to define f'(x) * dx
     template<typename F, typename DF>
     XDIFF_INLINE_HOST_DEVICE
-    static auto special_diff(const F& f, const DF& df) {
+    static decltype(auto) special_diff(const F& f, const DF& df) {
         return Derived::special_diff(f, df);
     }
 
