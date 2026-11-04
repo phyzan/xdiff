@@ -1,7 +1,7 @@
 #ifndef XDIFF_DUAL_MACROS_HPP
 #define XDIFF_DUAL_MACROS_HPP
 
-#include "../backend.hpp" // IWYU pragma: keep
+#include "../utils/backend.hpp" // IWYU pragma: keep
 
 
 #define XDIFF_DUAL Dual<T, GD, Order>

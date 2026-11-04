@@ -4,16 +4,6 @@
 #include "core.hpp"
 
 
-namespace xdiff{
-
-// Defined in dual_impl.hpp. Declared here so that Power reaches it on a plain scalar, whichever header comes first.
-template<int P, typename F>
-XDIFF_INLINE_HOST_DEVICE
-decltype(auto) power(const F& f);
-
-} // namespace xdiff
-
-
 namespace xdiff::detail::rules{
 
 
@@ -24,13 +14,13 @@ struct Pos : BaseOperand<T, Pos<T>>{
 
     template<typename A>
     XDIFF_INLINE_HOST_DEVICE
-    static auto operation(const A& arg){
+    static decltype(auto) operation(const A& arg){
         return arg;
     }
 
     template<typename A, typename DA>
     XDIFF_INLINE_HOST_DEVICE
-    static auto diff_rule(const DiffPair<A, DA>& a) {
+    static decltype(auto) diff_rule(const DiffPair<A, DA>& a) {
         if constexpr (DiffPair<A, DA>::isTrivial()) {
             return 0;
         } else {
@@ -78,17 +68,17 @@ struct Power : MathFunc<Power<T, N>, T>{
     using Base = MathFunc<Power<T, N>, T>;
 
     /// @brief f^N. Like log() and exp(), the unqualified call descends the nested
-    /// layers by ADL, and reaches the generic fold once the operand is a bare scalar.
+    /// layers by ADL, and reaches lazex's own power once the operand is a bare scalar.
     template<typename A>
     XDIFF_INLINE_HOST_DEVICE
     static decltype(auto) operation(const A& arg){
         return power<N>(arg);
     }
 
-    /// @brief d(f^N) = N * f^(N-1) * df
+    /// @brief d(f^N) = N * f^(N-1) * df, which is df itself for N == 1: decltype(auto) avoids copying it.
     template<typename F, typename DF>
     XDIFF_INLINE_HOST_DEVICE
-    static auto special_diff(const F& f, const DF& df) {
+    static decltype(auto) special_diff(const F& f, const DF& df) {
         if constexpr (N == 1){
             return df;
         } else {
@@ -258,8 +248,7 @@ struct Tan : MathFunc<Tan<T>, T>{
     template<typename F, typename DF>
     XDIFF_INLINE_HOST_DEVICE
     static auto special_diff(const F& f, const DF& df) {
-        auto tan_f = tan(f);
-        return df * (1 + tan_f * tan_f);
+        return df * (1 + power<2>(tan(f)));
     }
 };
 
@@ -279,8 +268,7 @@ struct Cot : MathFunc<Cot<T>, T>{
     template<typename F, typename DF>
     XDIFF_INLINE_HOST_DEVICE
     static auto special_diff(const F& f, const DF& df) {
-        auto sin_f = sin(f);
-        return -df / (sin_f * sin_f);
+        return -df / power<2>(sin(f));
     }
 };
 
@@ -320,8 +308,7 @@ struct Csc : MathFunc<Csc<T>, T>{
     template<typename F, typename DF>
     XDIFF_INLINE_HOST_DEVICE
     static auto special_diff(const F& f, const DF& df) {
-        auto sin_f = sin(f);
-        return -df * cos(f) / (sin_f * sin_f);
+        return -df * cos(f) / power<2>(sin(f));
     }
 };
 
@@ -534,8 +521,7 @@ struct Tanh : MathFunc<Tanh<T>, T>{
     template<typename F, typename DF>
     XDIFF_INLINE_HOST_DEVICE
     static auto special_diff(const F& f, const DF& df) {
-        auto th = tanh(f);
-        return df * (1 - th * th);
+        return df * (1 - power<2>(tanh(f)));
     }
 };
 
@@ -555,7 +541,7 @@ struct Erf : MathFunc<Erf<T>, T>{
     template<typename F, typename DF>
     XDIFF_INLINE_HOST_DEVICE
     static auto special_diff(const F& f, const DF& df) {
-        return constants<T>::two_over_sqrtpi() * df * exp(-f * f);
+        return lazex::constants<T>::two_over_sqrtpi() * df * exp(-f * f);
     }
 };
 

@@ -188,3 +188,31 @@ T f(const T& x){
 
 }
 ```
+
+---
+
+## Lazy evaluation
+
+A gradient that is not trivially copyable owns its storage, like the `std::vector` of `DynamicState`, or a `std::array` of `mpfr::mpreal`. Every temporary of a nested operation would then have to allocate it. So for such a gradient, a `Dual` of order `N > 1` stores its value and its derivatives as `lazex::LazyType<Dual<T, GD, N-1>>` instead of `Dual<T, GD, N-1>`, and their arithmetic is evaluated into reusable [LazeX](https://github.com/phyzan/lazex) workers. An operation then only allocates the `Dual` it returns. Trivially copyable gradients, like a `std::array<double, N>`, have nothing to gain and store plain `Dual`s.
+
+This is automatic, and only shows when using the elements of `grad()` or `full_value()` directly, because arithmetic on them gives an unevaluated expression:
+
+```cpp
+xdiff::DynamicDual<T, 3> f = x * y;
+
+// Only an expression holding references to f: must not outlive it, and must be used before f changes
+auto a = f.grad()[0] * f.grad()[1];
+
+// Evaluates it. A plain Dual does not convert from an expression, a LazyType<Dual> does
+lazex::LazyType<xdiff::Dual<T, xdiff::DynamicState, 2>> b = f.grad()[0] * f.grad()[1];
+```
+
+For maximum performance, the variables of a large expression can be lazy as well:
+
+```cpp
+lazex::LazyType<xdiff::Dual<T, xdiff::DynamicState, 3>> x(seeds[0]), y(seeds[1]);
+```
+
+#### No need for `lazex::update_workers`
+
+`LazeX` asks you to call `lazex::update_workers<T>()` after changing global state that affects its cached workers. This is never required for a `Dual`: every `Dual` operation first resizes its output to the shape of its operands, then assigns each component a freshly computed value, so a stale worker is corrected the first time it is reused.

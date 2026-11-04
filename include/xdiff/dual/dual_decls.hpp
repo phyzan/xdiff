@@ -40,11 +40,18 @@ concept converts_to = std::constructible_from<T, U>;
 template<typename T, typename GD, int Order>
 struct dual_type_getter{
     static_assert(Order > 0, "Differentiation order must be positive");
-    using type = dual_template<Dual<T, GD, Order-1>, GD>;
+    // A gradient that is not trivially copyable owns its storage, so every temporary Dual would allocate it anew.
+    // On a LazyType, the nested operations build an expression instead, which is evaluated into reusable workers.
+    using scalar = std::conditional_t<
+        std::is_trivially_copyable_v<state_t<T, GD>>,
+        Dual<T, GD, Order-1>,
+        lazex::LazyType<Dual<T, GD, Order-1>>>;
+    using type = dual_template<scalar, GD>;
 };
 
 template<typename T, typename GD>
 struct dual_type_getter<T, GD, 1>{
+    using scalar = T;
     using type = dual_template<T, GD>;
 };
 // ----------------------------------------------
@@ -232,6 +239,3 @@ bool isfinite(const ::xdiff::detail::XDIFF_SEED& x){
 } // namespace std
 
 #endif // XDIFF_DUAL_DECLS_HPP
-
-
-// TODO lazy type support
