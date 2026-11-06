@@ -328,7 +328,7 @@ struct ArcSin : MathFunc<ArcSin<T>, T>{
     template<typename F, typename DF>
     XDIFF_INLINE_HOST_DEVICE
     static auto special_diff(const F& f, const DF& df) {
-        return df / sqrt(1 - (f * f));
+        return df / sqrt(1 - power<2>(f));
     }
 };
 
@@ -348,7 +348,7 @@ struct ArcCos : MathFunc<ArcCos<T>, T>{
     template<typename F, typename DF>
     XDIFF_INLINE_HOST_DEVICE
     static auto special_diff(const F& f, const DF& df) {
-        return -df / sqrt(1 - (f * f));
+        return -df / sqrt(1 - power<2>(f));
     }
 };
 
@@ -368,7 +368,7 @@ struct ArcTan : MathFunc<ArcTan<T>, T>{
     template<typename F, typename DF>
     XDIFF_INLINE_HOST_DEVICE
     static auto special_diff(const F& f, const DF& df) {
-        return df / (1 + (f * f));
+        return df / (1 + power<2>(f));
     }
 };
 
@@ -391,12 +391,10 @@ struct ArcTan2 : BaseOperand<T, ArcTan2<T>>{
             return 0;  // atan2(const, const): derivative is 0
         } else if constexpr (DiffPair<A, DA>::isTrivial()) {
             // atan2(c, f): d/dx = -c * df / (c² + f²)
-            const auto& c = scalar_of<T>(a.value);
-            return -c * b.grad / (c * c + b.value * b.value);
+            return -a.value * b.grad / (power<2>(a.value) + power<2>(b.value));
         } else if constexpr (DiffPair<B, DB>::isTrivial()) {
             // atan2(f, c): d/dx = c * df / (f² + c²)
-            const auto& c = scalar_of<T>(b.value);
-            return c * a.grad / (a.value * a.value + c * c);
+            return b.value * a.grad / (power<2>(a.value) + power<2>(b.value));
         } else {
             // General: (b*da - a*db) / (a² + b²)
             return (b.value * a.grad - a.value * b.grad) / (a.value * a.value + b.value * b.value);
@@ -421,7 +419,7 @@ struct ArcCot : MathFunc<ArcCot<T>, T>{
     template<typename F, typename DF>
     XDIFF_INLINE_HOST_DEVICE
     static auto special_diff(const F& f, const DF& df) {
-        return -df / (1 + f * f);
+        return -df / (1 + power<2>(f));
     }
 };
 
@@ -441,7 +439,7 @@ struct ArcSec : MathFunc<ArcSec<T>, T>{
     template<typename F, typename DF>
     XDIFF_INLINE_HOST_DEVICE
     static auto special_diff(const F& f, const DF& df) {
-        return df / (abs(f) * sqrt((f * f) - 1));
+        return df / (abs(f) * sqrt(power<2>(f) - 1));
     }
 };
 
@@ -461,7 +459,7 @@ struct ArcCsc : MathFunc<ArcCsc<T>, T>{
     template<typename F, typename DF>
     XDIFF_INLINE_HOST_DEVICE
     static auto special_diff(const F& f, const DF& df) {
-        return -df / (abs(f) * sqrt((f * f) - 1));
+        return -df / (abs(f) * sqrt(power<2>(f) - 1));
     }
 };
 
@@ -541,7 +539,7 @@ struct Erf : MathFunc<Erf<T>, T>{
     template<typename F, typename DF>
     XDIFF_INLINE_HOST_DEVICE
     static auto special_diff(const F& f, const DF& df) {
-        return lazex::constants<T>::two_over_sqrtpi() * df * exp(-f * f);
+        return lazex::constants<T>::two_over_sqrtpi() * df * exp(-power<2>(f));
     }
 };
 

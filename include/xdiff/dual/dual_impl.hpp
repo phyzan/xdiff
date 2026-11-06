@@ -442,11 +442,46 @@ private:
 };
 
 
+// T, or the scalar at the bottom of it if T is a Dual. A Dual made from a plain number has no gradient to speak of,
+// so a scalar operand of a nested Dual has to stay a scalar.
+template<typename T>
+struct base_scalar{
+    using type = T;
+};
+
+template<typename T, typename GD, int Order>
+struct base_scalar<Dual<T, GD, Order>> : base_scalar<T> {};
+
+template<typename T>
+using base_scalar_t = base_scalar<T>::type;
+
+
 struct dual_operator_handler {
 
     template<typename Rule, typename T, typename GD, int Order, typename... A>
     XDIFF_INLINE_HOST_DEVICE
     static Dual<T, GD, Order>& assign(Dual<T, GD, Order>& out, const A&... args){
+        return assign_promoted<Rule>(out, promote<T>(args)...);
+    }
+
+private:
+
+    // Every scalar operand of arithmetic type becomes a base_scalar_t<T> here, once per operation, so the rules
+    // never see one: an integer would wrap around or overflow in its own type, and a float would compute in low
+    // precision. The result lives until assign_promoted returns, so the expression a rule returns may reference it.
+    template<typename T, typename A>
+    XDIFF_INLINE_HOST_DEVICE
+    static decltype(auto) promote(const A& x){
+        if constexpr (std::is_arithmetic_v<A>) {
+            return base_scalar_t<T>(x);
+        } else {
+            return x;
+        }
+    }
+
+    template<typename Rule, typename T, typename GD, int Order, typename... A>
+    XDIFF_INLINE_HOST_DEVICE
+    static Dual<T, GD, Order>& assign_promoted(Dual<T, GD, Order>& out, const A&... args){
         // A lazy expression evaluates into workers, which keep whatever shape their last use left them in.
         GD::resize_like(out.grad_, shape_of(args...));
         // The gradient goes first, since it still needs the old value when "out" aliases an operand.
@@ -456,8 +491,6 @@ struct dual_operator_handler {
         out.value_ = Rule::operation(value_of(args, out)...);
         return out;
     }
-
-private:
 
     template<typename T, typename GD, int Order>
     XDIFF_INLINE_HOST_DEVICE
