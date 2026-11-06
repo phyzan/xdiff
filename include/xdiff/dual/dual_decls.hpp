@@ -162,11 +162,7 @@ using   ::xdiff::abs, ::xdiff::log, ::xdiff::log10, ::xdiff::exp, \
 namespace lazex::detail{
 
 template<typename T, typename GD, int Order>
-struct constants<::xdiff::detail::Dual<T, GD, Order>> {
-    using type = ::xdiff::detail::Dual<T, GD, Order>;
-    static type pi()              { return type(constants<T>::pi()); }
-    static type two_over_sqrtpi() { return type(constants<T>::two_over_sqrtpi()); }
-};
+struct constants<::xdiff::detail::Dual<T, GD, Order>> : constants<T> {};
 
 } // namespace lazex::detail
 

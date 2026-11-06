@@ -55,46 +55,6 @@ DiffPair(F&&, DF&&)
     >
 >;
 
-namespace detail{
-
-// Defined in dual/dual_impl.hpp. Declared here for scalar_of, which the rules below call.
-template<typename T, typename GD, int Order>
-class Dual;
-
-template<typename T, typename GD, int Order>
-class Seed;
-
-// Recognise a Dual or a Seed, including a class derived from one.
-template<typename T, typename GD, int Order>
-std::true_type is_dual_ptr(const Dual<T, GD, Order>*);
-std::false_type is_dual_ptr(const void*);
-
-template<typename T, typename GD, int Order>
-std::true_type is_seed_ptr(const Seed<T, GD, Order>*);
-std::false_type is_seed_ptr(const void*);
-
-} // namespace xdiff::detail
-
-/**
- * @brief Returns a Dual or a Seed as it is, and converts any other argument to T.
- *
- * The rules pass a possibly scalar operand through this before a '-' acts on it, so that an
- * integer scalar is not negated in its own type, where an unsigned one wraps around: -2u in
- * d/dx (2u / x), or 0u - 1 in d/dx pow(x, 0u).
- */
-template<typename T, typename U>
-XDIFF_INLINE_HOST_DEVICE
-constexpr decltype(auto) scalar_of(U&& arg){
-    using V = std::remove_cvref_t<U>;
-    if constexpr (decltype(detail::is_dual_ptr(std::declval<const V*>()))::value) {
-        return std::forward<U>(arg);
-    } else if constexpr (decltype(detail::is_seed_ptr(std::declval<const V*>()))::value) {
-        return std::forward<U>(arg);
-    } else {
-        return T(std::forward<U>(arg));
-    }
-}
-
 } // namespace xdiff
 
 
@@ -228,7 +188,7 @@ struct Div : BaseOperand<T, Div<T>>{
             return 0;  // const / const: derivative is 0
         } else if constexpr (DiffPair<A, DA>::isTrivial()) {
             // c / f: d/dx = -c * df / f²
-            return -scalar_of<T>(a.value) * b.grad / (b.value * b.value);
+            return -a.value * b.grad / (b.value * b.value);
         } else if constexpr (DiffPair<B, DB>::isTrivial()) {
             // f / c: d/dx = df / c
             return a.grad / b.value;
@@ -259,13 +219,13 @@ struct Pow : BaseOperand<T, Pow<T>>{
         if constexpr (DiffPair<A, DA>::isTrivial() && DiffPair<B, DB>::isTrivial()) {
             return 0;  // const^const: derivative is 0
         } else if constexpr (DiffPair<B, DB>::isTrivial()) {
-            // a^const: d/dx = const * a^(const-1) * da
-            return a.grad * b.value * pow(a.value, scalar_of<T>(b.value) - 1);
+            // a^const: d/dx = const * a^(const-1) * a.grad
+            return a.grad * b.value * pow(a.value, b.value - 1);
         } else if constexpr (DiffPair<A, DA>::isTrivial()) {
-            // const^b: d/dx = const^b * log(const) * db
+            // const^b: d/dx = const^b * log(const) * b.grad
             return a.value * pow(a.value, b.value - 1) * log(a.value) * b.grad;
         } else {
-            // General: a^b * (da*b/a + db*log(a))
+            // General: a^b * (a.grad*b/a + b.grad*log(a))
             return pow(a.value, b.value) * (a.grad * b.value / a.value + b.grad * log(a.value));
         }
     }
