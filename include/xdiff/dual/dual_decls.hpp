@@ -19,13 +19,13 @@ template<typename T, typename GD, int Order>
 class Seed;
 
 template<typename T, typename GD, int Order>
-using SeedState = GD::template state_type<Seed<T, GD, Order>>;
+using SeedState = typename GD::template state_type<Seed<T, GD, Order>>;
 
 template<typename T, typename GD, int Order>
-using dual_state_t = GD::template state_type<Dual<T, GD, Order>>;
+using dual_state_t = typename GD::template state_type<Dual<T, GD, Order>>;
 
 template<typename T, typename GD>
-using state_t = GD::template state_type<T>;
+using state_t = typename GD::template state_type<T>;
 
 template<typename T, typename GD, int Order>
 void set_seeds(SeedState<T, GD, Order>& out, const state_t<T, GD>& state);

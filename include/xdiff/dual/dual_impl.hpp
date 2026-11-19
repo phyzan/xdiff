@@ -68,16 +68,16 @@ protected:
 template<typename T, typename GD, int Order>
 class Dual : private dual_type_getter<T, GD, Order>::type {
     static_assert(Order > 0, "Differentiation order must be > 0");
-    using Base = detail::dual_type_getter<T, GD, Order>::type;
+    using Base = typename detail::dual_type_getter<T, GD, Order>::type;
 public:
     using value_type = T;
-    using state_type = Base::state_type;
+    using state_type = typename Base::state_type;
 
     // level relative to `Order`
     // Returns the scalar type the value and
     // the elements of state_type are made of
     template<int level>
-    using Scalar = dual_type_getter<T, GD, Order+level>::scalar;
+    using Scalar = typename dual_type_getter<T, GD, Order+level>::scalar;
 
     XDIFF_INLINE_HOST_DEVICE
     Dual() = default;
@@ -314,7 +314,7 @@ public:
 
     template<typename U>
     XDIFF_INLINE_HOST_DEVICE
-    Dual& resize_like(const GD::template state_type<U>& proto){
+    Dual& resize_like(const typename GD::template state_type<U>& proto){
         GD::resize_like(this->grad_, proto);
 
         // For deep resizing
@@ -453,7 +453,7 @@ template<typename T, typename GD, int Order>
 struct base_scalar<Dual<T, GD, Order>> : base_scalar<T> {};
 
 template<typename T>
-using base_scalar_t = base_scalar<T>::type;
+using base_scalar_t = typename base_scalar<T>::type;
 
 
 struct dual_operator_handler {
