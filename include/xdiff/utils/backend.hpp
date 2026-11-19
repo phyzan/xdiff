@@ -38,7 +38,7 @@
  * - XDIFF_FORCEINLINE: Force inline hint
  * - XDIFF_INLINE_DEVICE: Inline device function
  * - XDIFF_INLINE_HOST_DEVICE: Inline host+device function
- * - XDIFF_ALWAYS_INLINE: Aggressive inlining for lambdas
+ * - XDIFF_LAMBDA_INLINE: Inlining for lambdas
  */
 
 #if defined(XDIFF_BACKEND_CUDA) || defined(XDIFF_BACKEND_HIP)
@@ -78,16 +78,14 @@
 
 #endif
 
-// For lambda attributes (flatten only on GCC/Clang, not CUDA/HIP)
+// For lambdas
 #if defined(XDIFF_BACKEND_CUDA) || defined(XDIFF_BACKEND_HIP)
-#define XDIFF_ALWAYS_INLINE __forceinline__
+#define XDIFF_LAMBDA_INLINE __forceinline__
 #elif defined(__GNUC__) || defined(__clang__)
-#define XDIFF_ALWAYS_INLINE __attribute__((always_inline, flatten))
+#define XDIFF_LAMBDA_INLINE __attribute__((always_inline))
 #else
-#define XDIFF_ALWAYS_INLINE
+#define XDIFF_LAMBDA_INLINE
 #endif
-
-#define XDIFF_LAMBDA_INLINE XDIFF_ALWAYS_INLINE
 
 
 #endif // XDIFF_BACKEND_HPP
